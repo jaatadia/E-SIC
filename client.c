@@ -36,24 +36,24 @@ void setupServerAddr(struct sockaddr_in * servaddr) {
 
 int main() { 
 	int sockfd = setupConnection();	
-	uint32_t timestamps[2 * 4]; //TODO remove magic constants
+	int32_t timestamps[2 * 4]; //TODO remove magic constants
 	
 	struct sockaddr_in servaddr;
 	setupServerAddr(&servaddr); 
 	
-	size_t outGoingSize = sizeof(uint32_t) * 2; 
-	size_t incomingSize = sizeof(uint32_t) * 2 * 3;
+	size_t outGoingSize = sizeof(int32_t) * 2; 
+	size_t incomingSize = sizeof(int32_t) * 2 * 3;
 	socklen_t servaddrSize = sizeof(servaddr);
 
 	long long timestamp = epochInMicros();
 	encodeEpochInMicros(timestamp, &timestamps, 0);
 
 	printf("Sending t1: %lld.\n", timestamp); 
-	sendto(sockfd, (const uint32_t *)timestamps, outGoingSize,  0, (const struct sockaddr *) &servaddr, servaddrSize); 
+	sendto(sockfd, (const int32_t *)timestamps, outGoingSize,  0, (const struct sockaddr *) &servaddr, servaddrSize); 
 	printf("Awaiting response...\n"); 
 	
 	// TODO add verification of server identity	
-	if(recv(sockfd, (uint32_t *)timestamps, incomingSize, MSG_WAITALL) == incomingSize){
+	if(recv(sockfd, (int32_t *)timestamps, incomingSize, MSG_WAITALL) == incomingSize){
 		encodeEpochInMicros(epochInMicros(), &timestamps, 3*2);
 		printf("Received timestamps\n"); 	
 		for(int i = 0; i<4; i++) {

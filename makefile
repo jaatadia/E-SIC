@@ -16,10 +16,10 @@ sic.o: sic.h sic.c
 test: test.c sic.o linearfit.o
 	$(COMPILER) test.c sic.o linearfit.o -o test
 
-client: client.c 
+client: client.c microtime.o
 	$(COMPILER) client.c microtime.o -o client
 
-server: server.c 
+server: server.c microtime.o
 	$(COMPILER) server.c microtime.o -o server
 
 run: client server
