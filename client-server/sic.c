@@ -23,7 +23,7 @@ void sicInit(SicData* sic, int epoch) {
     sic->rttNextPos = 0;
     sic->rttSize = 0;
     sic->rttFirst = 0;
-    sic->rttLast = 0;	
+    sic->rttLast = 0;
 
     sic->actual_m = 0;
     sic->actual_c = 0;	
@@ -59,8 +59,10 @@ void sicStep(SicData* sic, int epoch, long long t1, long long t2, long long t3, 
 }
 
 void updateMedians(SicData* sic, double phiEstimate) {
+	sic->Wm[nex]
+
+
 	if(sic->medianSize == MEDIAN_MAX_SIZE) {
-		sic->phiAccumulator = sic->phiAccumulator - sic->Wm[sic->medianNextPos] + phiEstimate;
 		sic->Wm[sic->medianNextPos] = phiEstimate;
 		sic->Wmedian[sic->medianNextPos] = sic->phiAccumulator / MEDIAN_MAX_SIZE;
 		sic->medianNextPos = (sic->medianNextPos + 1) % MEDIAN_MAX_SIZE;

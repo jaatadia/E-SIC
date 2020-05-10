@@ -20,11 +20,8 @@ struct SicData {
 	int preSync;
 	int epochSync;
 
-	int medianNextPos;
-	int medianSize;
-	double phiAccumulator;
-    double Wm[MEDIAN_MAX_SIZE];
-    double Wmedian[MEDIAN_MAX_SIZE];
+    CircularOrderedArray Wm;
+    CircularOrderedArray Wmedian;
 
     int rttNextPos;
 	int rttSize;
