@@ -1,5 +1,5 @@
-main
-test
-server
-client
+client-server/test
+client-server/server
+client-server/client
 *.o
+esp32/build/*
