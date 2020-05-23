@@ -1,12 +1,27 @@
 #include "circularOrderedArray.h"
 
+void initCircularOrderedArray(CircularOrderedArray * array){
+	array->next = 0;
+	array->size = 0;
+}
+
+int orderRight(double * array, int position, int size);
+
+void orderLeft(double * array, int position);
+
 void orderPosition(double * array, int position, int size){
 	if(!orderRight(array, position, size)){
-		orderLeft(array, position, size);
+		orderLeft(array, position);
 	}	
 }
 
-int orderRight(double * array, double * position, int size){
+void swap(double * first, double * second){
+	double aux = *first;
+	*first=*second;
+	*second=aux;
+}
+
+int orderRight(double * array, int position, int size){
 	if((position + 1 < size) && array[position] > array[position+1]){ //hasNext && bigger than next
 		swap(&array[position], &array[position+1]);
 		orderRight(array, position+1, size);
@@ -15,17 +30,11 @@ int orderRight(double * array, double * position, int size){
 	return 0;
 }
 
-void orderLeft(double * array, double * position){
+void orderLeft(double * array, int position){
 	if(position > 0 && array[position] < array[position-1]){ //hasPrevious && smaller than previous
 		swap(&array[position], &array[position-1]);
 		orderLeft(array, position-1);
 	}
-}
-
-void swap(double * first, double * second){
-	double aux = *first;
-	*first=*second;
-	*second=aux;
 }
 
 void insertOrdered(CircularOrderedArray* array, double value){
@@ -42,8 +51,8 @@ void insertOrdered(CircularOrderedArray* array, double value){
 				break;
 			}
 		}
-		array->fifo[next]=value;
-		array->next = array->next + 1 % CIRCULAR_ORDERED_ARRAY_MAX_SIZE;
+		array->fifo[array->next]=value;
+		array->next = (array->next + 1) % CIRCULAR_ORDERED_ARRAY_MAX_SIZE;
 	}
 	
 	array->array[insertPosition] = value;
@@ -53,4 +62,3 @@ void insertOrdered(CircularOrderedArray* array, double value){
 double median(CircularOrderedArray* array){
 	return array->array[array->size/2];
 }
-

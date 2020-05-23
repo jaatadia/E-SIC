@@ -3,6 +3,14 @@ COMPILER=gcc
 target: run
 
 #TODO find how to to parameterize this, %(lib).o: %(lib).h %(lib).c
+circularOrderedArray.o: circularOrderedArray.h circularOrderedArray.c
+	$(COMPILER) -c circularOrderedArray.c -o circularOrderedArray.o
+
+circularOrderedArrayTest.o: circularOrderedArray.h circularOrderedArray.c
+	$(COMPILER) -DCIRCULAR_ORDERED_ARRAY_MAX_SIZE=10 -c circularOrderedArray.c -o circularOrderedArrayTest.o
+
+circularOrderedArrayTestCase: circularOrderedArrayTestCase.c circularOrderedArrayTest.o
+	$(COMPILER) -DCIRCULAR_ORDERED_ARRAY_MAX_SIZE=10 circularOrderedArrayTestCase.c circularOrderedArrayTest.o -o circularOrderedArrayTestCase
 
 linearfit.o: linearfit.h linearfit.c
 	$(COMPILER) -c linearfit.c -o linearfit.o
@@ -26,10 +34,10 @@ run: client server
 	./client
 
 runtests: test
-	./test
+	./circularOrderedArrayTestCase
 
 clear:
-	-rm main test client server *.o
+	-rm main client server *.o *TestCase
 
 clean: clear
 
