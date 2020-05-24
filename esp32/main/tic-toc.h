@@ -8,23 +8,23 @@
 #ifndef MAIN_TIC_TOC_H_
 #define MAIN_TIC_TOC_H_
 #include <stdint.h>
+#include "sic.h"
 
-#define TIC_TOC_SUCCESS 0
-#define TIC_TOC_TIMEOUT -1
+#define TIC_TOC_PERIOD 1000
 
-struct ticTocSenderData {
+struct TicTocData {
 	int sock;
+	const char * serverIp;
+	int serverPort;
+	SicData sicdata;
 };
 
-typedef struct ticTocSenderData ticTocSenderData;
+typedef struct TicTocData TicTocData;
 
-void setupTicToc(ticTocSenderData *);
+void setupTicToc(TicTocData *, const char * serverIp, int serverPort);
 
-/* *
- * returns:
- * 	0 everything all right
- * 	TIC_TOC_TIMEOUT in case of timeout
- */
-int getTimeStamps(ticTocSenderData *, int64_t *);
+int ticTocReady(TicTocData *);
+
+int64_t ticTocTime(TicTocData *);
 
 #endif /* MAIN_TIC_TOC_H_ */

@@ -1,7 +1,7 @@
 /*
  * main.c
  *
- *  Created on: May 9, 2020
+ *  Created on: May 24, 2020
  *      Author: jaatadia@gmail.com
  */
 #include <stdio.h>
@@ -16,27 +16,28 @@
 #include "tic-toc.h"
 #include "microtime.h"
 
+#define TICTOC_SERVER "192.168.0.240"
+#define TICTOC_PORT 8080
+
 void app_main(void)
 {
 	connectToWiFi();
 
-	int64_t ticTocBuffer[4];
-	ticTocSenderData ticTocData;
-	setupTicToc(&ticTocData);
+	TicTocData * ticTocData = malloc(sizeof(TicTocData));
+	setupTicToc(ticTocData, TICTOC_SERVER, TICTOC_PORT);
 
-    while(true){
-    	vTaskDelay(1000 / portTICK_PERIOD_MS);
+    for(;;){
+    	vTaskDelay(10000 / portTICK_PERIOD_MS);
 
-    	int status = getTimeStamps(&ticTocData, ticTocBuffer);
-    	if(status < TIC_TOC_SUCCESS) {
-    		printf("timeout connecting to tic-toc server.");
+    	char ticToctimestamp[64];
+    	char timestamp[64];
+		microsToTimestamp(epochInMicros(), timestamp);
+    	if(!ticTocReady(ticTocData)) {
+    		printf("Waiting for ticTocTo be ready. (systemTime: %s)\n", timestamp);
     	} else {
-    		printf("--------\n");
-			for(int i=0; i<4; i++){
-				char timestamp[64];
-				microsToTimestamp(ticTocBuffer[i], timestamp);
-				printf("t%d: %lld(%s)\n", i+1, ticTocBuffer[i], timestamp);
-			}
+			int64_t ttTime = ticTocTime(ticTocData);
+			microsToTimestamp(ttTime, ticToctimestamp);
+			printf("TicTocTime %s (%lld) (systemTime: %s)\n",ticToctimestamp,  ttTime, timestamp);
     	}
     }
 }
