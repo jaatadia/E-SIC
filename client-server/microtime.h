@@ -1,7 +1,9 @@
 #ifndef MICRO_TIME_H
 #define MICRO_TIME_H
 
+#ifndef NULL
 #define NULL 0 
+#endif
 
 #include <stdint.h> 
 

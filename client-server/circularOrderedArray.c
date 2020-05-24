@@ -5,16 +5,6 @@ void initCircularOrderedArray(CircularOrderedArray * array){
 	array->size = 0;
 }
 
-int orderRight(double * array, int position, int size);
-
-void orderLeft(double * array, int position);
-
-void orderPosition(double * array, int position, int size){
-	if(!orderRight(array, position, size)){
-		orderLeft(array, position);
-	}	
-}
-
 void swap(double * first, double * second){
 	double aux = *first;
 	*first=*second;
@@ -22,19 +12,25 @@ void swap(double * first, double * second){
 }
 
 int orderRight(double * array, int position, int size){
-	if((position + 1 < size) && array[position] > array[position+1]){ //hasNext && bigger than next
-		swap(&array[position], &array[position+1]);
-		orderRight(array, position+1, size);
-		return 1;
+	int nextPosition = position;
+	while((nextPosition + 1 < size) && array[nextPosition] > array[nextPosition+1]){ //hasNext && bigger than next
+		swap(&array[nextPosition], &array[nextPosition+1]);
+		nextPosition++;
 	}
-	return 0;
+	return position!=nextPosition;
 }
 
 void orderLeft(double * array, int position){
-	if(position > 0 && array[position] < array[position-1]){ //hasPrevious && smaller than previous
+	while(position > 0 && array[position] < array[position-1]){ //hasPrevious && smaller than previous
 		swap(&array[position], &array[position-1]);
-		orderLeft(array, position-1);
+		position--;
 	}
+}
+
+void orderPosition(double * array, int position, int size){
+	if(!orderRight(array, position, size)){
+		orderLeft(array, position);
+	}	
 }
 
 void insertOrdered(CircularOrderedArray* array, double value){
