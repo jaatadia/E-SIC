@@ -11,7 +11,10 @@
 #include "microtime.h"
 
 #define PORT 8080 
+
+#ifndef NULL
 #define NULL 0 
+#endif
 
 static int sigintReceived = 0;
 

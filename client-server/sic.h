@@ -9,22 +9,20 @@
 #define MAX_to 6
 
 #define NO_SYNC 0
-#define PRE_SYNC 1
-#define SYNC 2
+#define RE_SYNC 1
+#define PRE_SYNC 2
+#define SYNC 3
+
+#include "linearfit.h"
+#include "circularOrderedArray.h"
 
 struct SicData { 
 	int state;
-	int e_prev;
+	int syncSteps;
+    int to;
 
-	int errSync;
-	int preSync;
-	int epochSync;
-
-	int medianNextPos;
-	int medianSize;
-	double phiAccumulator;
-    double Wm[MEDIAN_MAX_SIZE];
-    double Wmedian[MEDIAN_MAX_SIZE];
+    CircularOrderedArray Wm;
+    CircularLinearFitArray Wmedian;
 
     int rttNextPos;
 	int rttSize;
@@ -38,7 +36,11 @@ struct SicData {
 
 typedef struct SicData SicData;
 
-void sicInit(SicData* sic, int epoch);
-void sicStep(SicData* sic, int epoch, long long t1, long long t2, long long t3, long long t4);
+void sicInit(SicData* sic);
+void sicStepTimeout(SicData* sic);
+void sicStep(SicData* sic, long long t1, long long t2, long long t3, long long t4);
+
+int sicTimeAvailable(SicData* sic);
+long long sicTime(SicData* sic, long long systemClock);
 
 #endif

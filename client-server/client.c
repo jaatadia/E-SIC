@@ -9,8 +9,8 @@
 #include <sys/time.h>
 #include "microtime.h"
 
+#define SERVER "127.0.0.1" 
 #define PORT 8080 
-
 
 int setupConnection() {
 	int sockfd; 
@@ -31,7 +31,8 @@ void setupServerAddr(struct sockaddr_in * servaddr) {
 	memset(servaddr, 0, sizeof(*servaddr)); 
 	servaddr->sin_family = AF_INET; 
 	servaddr->sin_port = htons(PORT); 
-	servaddr->sin_addr.s_addr = INADDR_ANY; 
+	//servaddr->sin_addr.s_addr = INADDR_ANY; 
+	inet_aton(SERVER, &(servaddr->sin_addr.s_addr));
 }
 
 int main() { 

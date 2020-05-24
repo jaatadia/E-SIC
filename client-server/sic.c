@@ -1,78 +1,78 @@
 #include "sic.h"
-#include "linearfit.h"
-#include <limits.h>
 
 void updateMedians(SicData* sic, double phiEstimate);
 void updateRoundTripTime(SicData* sic, long long rtt);
 long long min(long long* array, int start, int size, int maxSize);
 int rttChangeDectected(SicData* sic);
 
-
-void sicInit(SicData* sic, int epoch) {
+void sicReset(SicData* sic){
+	sic->syncSteps = 0;
 	
-	sic->state = NO_SYNC;
-
-	sic->errSync = epoch;
-	sic->preSync = INT_MAX - P;
-	sic->epochSync = INT_MAX - P;
-	
-	sic->phiAccumulator = 0;
-    sic->medianNextPos = 0;
-    sic->medianSize = 0;
+	initCircularOrderedArray(&sic->Wm);
+	initCircularLinearFitArray(&sic->Wmedian);
 
     sic->rttNextPos = 0;
     sic->rttSize = 0;
     sic->rttFirst = 0;
-    sic->rttLast = 0;	
+    sic->rttLast = 0;
+}
 
+
+void sicInit(SicData* sic) {
+	sicReset(sic);
+	sic->state = NO_SYNC;
     sic->actual_m = 0;
     sic->actual_c = 0;	
 }
 
-void sicStep(SicData* sic, int epoch, long long t1, long long t2, long long t3, long long t4) {
-	updateMedians(sic, t1 - t2 + (t2 - t1 + t4 - t3) / 2.0);
-	updateRoundTripTime(sic, t4 - t1);
-	if (rttRoutePreserved(sic)) {
-		if(epoch >= sic->preSync + P) {
-			sic->state = PRE_SYNC;
+void sicStepTimeout(SicData* sic){
+	sic->to++;
+	if(sic->to == MAX_to){
+		if(sic->state == NO_SYNC) { 
+			sicInit(sic);
+		} else { //if we have already an actual_m and actual_c we want to keep them
+			sicReset(sic);
+			sic->state = RE_SYNC;
 		}
-	} else {
-		sicInit(sic, epoch);
 	}
-	if (sic->state == SYNC && epoch >= sic->epochSync + P) {
-		LinearFitResponse linearFitResponse;
-		linearFit(&linearFitResponse, sic->Wmedian, sic->medianNextPos, sic->medianSize);
-		sic->epochSync = epoch;
-		sic->actual_m = (1 - ALPHA) * linearFitResponse.m + ALPHA * sic->actual_m;
-		sic->actual_c = linearFitResponse.c;	
-	} else if(sic -> state == NO_SYNC && epoch >= sic->errSync + MEDIAN_MAX_SIZE) {
-		sic->preSync = epoch;
-		sic->state = PRE_SYNC;
-	} else if(sic -> state == PRE_SYNC && epoch >= sic->preSync + P) {
-		LinearFitResponse linearFitResponse;
-		linearFit(&linearFitResponse, sic->Wmedian, sic->medianNextPos, sic->medianSize);
+}
+
+void sicStep(SicData* sic, long long t1, long long t2, long long t3, long long t4) {
+	sic->to=0;
+	insertOrdered(&sic->Wm, t1 - t2 + (t2 - t1 + t4 - t3) / 2.0); // Wm <- t1 - t2 + (t2 - t1 + t4 - t3) / 2.0 
+	insertPoint(&sic->Wmedian, t1, median(&sic->Wm)); // Wmedian <- (t1, median(Wm))
+	sic->syncSteps++;
+
+	/* updateRoundTripTime(sic, t4 - t1);
+	if (!rttRoutePreserved(sic)) {
+		sicInit(sic);
+	} */
+
+	if ((sic->state == PRE_SYNC || sic->state == SYNC) && sic->syncSteps == P) {
+		linearFit(&sic->Wmedian);
 		sic->state = SYNC;
-		sic->epochSync = epoch;
-		sic->actual_m = linearFitResponse.m;
-		sic->actual_c = linearFitResponse.c;
-	}
+		sic->syncSteps = 0;
+		sic->actual_m = (1 - ALPHA) * sic->Wmedian.m + ALPHA * sic->actual_m;
+		sic->actual_c = (1 - ALPHA) * sic->Wmedian.c + ALPHA * sic->actual_c;	
+	} else if((sic->state == NO_SYNC || sic->state == RE_SYNC) && sic->syncSteps == P + MEDIAN_MAX_SIZE) {
+		linearFit(&sic->Wmedian);
+		sic->state = PRE_SYNC;
+		sic->syncSteps = 0;
+		sic->actual_m = sic->Wmedian.m;
+		sic->actual_c = sic->Wmedian.c;
+	} 
 }
 
-void updateMedians(SicData* sic, double phiEstimate) {
-	if(sic->medianSize == MEDIAN_MAX_SIZE) {
-		sic->phiAccumulator = sic->phiAccumulator - sic->Wm[sic->medianNextPos] + phiEstimate;
-		sic->Wm[sic->medianNextPos] = phiEstimate;
-		sic->Wmedian[sic->medianNextPos] = sic->phiAccumulator / MEDIAN_MAX_SIZE;
-		sic->medianNextPos = (sic->medianNextPos + 1) % MEDIAN_MAX_SIZE;
-	} else {
-		sic->phiAccumulator = sic->phiAccumulator + phiEstimate;
-		sic->Wm[sic->medianSize] = phiEstimate;
-		sic->Wmedian[sic->medianSize] = sic->phiAccumulator / (sic->medianSize + 1);
-		sic->medianSize++;
-	}
+int sicTimeAvailable(SicData* sic){
+	return sic->state > NO_SYNC;
 }
 
-// TODO optimize this
+long long sicTime(SicData* sic, long long systemClock){
+	return systemClock - (systemClock*sic->actual_m + sic->actual_c);
+}
+
+
+// TODO optimize and extract this
 void updateRoundTripTime(SicData* sic, long long rtt) {
 	if(sic->rttSize == 2 * MEDIAN_MAX_SIZE) {
 		sic->Wrtt[sic->rttNextPos] = rtt;
@@ -127,23 +127,3 @@ int rttRoutePreserved(SicData* sic) {
 	}
 	return (bigger - smaller) <= errRTT * smaller;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
