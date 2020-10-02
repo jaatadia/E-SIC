@@ -24,5 +24,5 @@ typedef struct CircularOrderedArray CircularOrderedArray;
 
 void initCircularOrderedArray(CircularOrderedArray *);
 void insertOrdered(CircularOrderedArray *, int64_t );
-double median(CircularOrderedArray *);
+int64_t median(CircularOrderedArray *);
 #endif
