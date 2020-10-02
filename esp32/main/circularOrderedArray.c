@@ -40,7 +40,7 @@ void orderPosition(double *array, int position, int size) {
 	}
 }
 
-void insertOrdered(CircularOrderedArray *array, double value) {
+void insertOrdered(CircularOrderedArray *array, int64_t value) {
 	int insertPosition = 0;
 	if (array->size < CIRCULAR_ORDERED_ARRAY_MAX_SIZE) {
 		insertPosition = array->size;

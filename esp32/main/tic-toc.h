@@ -7,6 +7,7 @@
 
 #ifndef MAIN_TIC_TOC_H_
 #define MAIN_TIC_TOC_H_
+
 #include <stdint.h>
 #include "sic.h"
 

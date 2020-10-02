@@ -19,6 +19,7 @@
 #define PRE_SYNC 2
 #define SYNC 3
 
+#include <stdint.h>
 #include "linearfit.h"
 #include "circularOrderedArray.h"
 
@@ -31,16 +32,16 @@ struct SicData {
     CircularLinearFitArray Wmedian;
 
     double actual_m;
-    double actual_c;
+    int64_t actual_c;
 };
 
 typedef struct SicData SicData;
 
 void sicInit(SicData* sic);
 void sicStepTimeout(SicData* sic);
-void sicStep(SicData* sic, long long t1, long long t2, long long t3, long long t4);
+void sicStep(SicData* sic, int64_t t1, int64_t t2, int64_t t3, int64_t t4);
 
 int sicTimeAvailable(SicData* sic);
-long long sicTime(SicData* sic, long long systemClock);
+int64_t sicTime(SicData* sic, int64_t systemClock);
 
 #endif

@@ -16,7 +16,7 @@
 #include "tic-toc.h"
 #include "microtime.h"
 
-#define TICTOC_SERVER "192.168.0.240"
+#define TICTOC_SERVER "192.168.0.146"
 #define TICTOC_PORT 8080
 
 void app_main(void)

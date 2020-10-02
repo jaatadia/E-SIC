@@ -1,4 +1,4 @@
-/*
+	/*
  * microtime.c
  *
  *  Created on: May 9, 2020
@@ -6,13 +6,16 @@
  */
 #include "microtime.h"
 #include <time.h>
+#include "esp_timer.h"
 
 #ifndef NULL
 #define NULL 0
 #endif
 
 void epoch(struct timeval * time){
-	gettimeofday(time, NULL);
+	int64_t micros = epochInMicros();
+	time->tv_sec = micros / 1000000L;
+	time->tv_usec = micros % 1000000L;
 }
 
 int64_t evalToMicros(struct timeval * time){
@@ -24,9 +27,7 @@ int64_t toMicros(int32_t sec, int32_t usec){
 }
 
 int64_t epochInMicros(){
-	struct timeval currentTime;
-	epoch(&currentTime);
-	return evalToMicros(&currentTime);
+	return esp_timer_get_time();
 }
 
 void microsToTimestamp(int64_t micros, char * timestamp){
