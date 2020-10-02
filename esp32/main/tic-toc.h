@@ -11,6 +11,7 @@
 #include <stdint.h>
 #include "sic.h"
 
+#define TIC_TOC_DAEMON_PRIORITY 1
 #define TIC_TOC_PERIOD 1000
 
 struct TicTocData {
