@@ -1,8 +1,8 @@
 #include "sic.h"
 
 void updateMedians(SicData* sic, double phiEstimate);
-void updateRoundTripTime(SicData* sic, long long rtt);
-long long min(long long* array, int start, int size, int maxSize);
+void updateRoundTripTime(SicData* sic, int64_t rtt);
+int64_t min(int64_t* array, int start, int size, int maxSize);
 int rttChangeDectected(SicData* sic);
 
 void sicReset(SicData* sic){
@@ -37,7 +37,7 @@ void sicStepTimeout(SicData* sic){
 	}
 }
 
-void sicStep(SicData* sic, long long t1, long long t2, long long t3, long long t4) {
+void sicStep(SicData* sic, int64_t t1, int64_t t2, int64_t t3, int64_t t4) {
 	sic->to=0;
 	insertOrdered(&sic->Wm, t1 - t2 + (t2 - t1 + t4 - t3) / 2.0); // Wm <- t1 - t2 + (t2 - t1 + t4 - t3) / 2.0 
 	insertPoint(&sic->Wmedian, t1, median(&sic->Wm)); // Wmedian <- (t1, median(Wm))
@@ -67,13 +67,13 @@ int sicTimeAvailable(SicData* sic){
 	return sic->state > NO_SYNC;
 }
 
-long long sicTime(SicData* sic, long long systemClock){
+int64_t sicTime(SicData* sic, int64_t systemClock){
 	return systemClock - (systemClock*sic->actual_m + sic->actual_c);
 }
 
 
 // TODO optimize and extract this
-void updateRoundTripTime(SicData* sic, long long rtt) {
+void updateRoundTripTime(SicData* sic, int64_t rtt) {
 	if(sic->rttSize == 2 * MEDIAN_MAX_SIZE) {
 		sic->Wrtt[sic->rttNextPos] = rtt;
 		sic->rttNextPos = (sic->rttNextPos + 1) % (2 * MEDIAN_MAX_SIZE);
@@ -103,10 +103,10 @@ void updateRoundTripTime(SicData* sic, long long rtt) {
 	}
 }
 
-long long min(long long* array, int start, int size, int maxSize) {
-	long long min = array[start];
+int64_t min(int64_t* array, int start, int size, int maxSize) {
+	int64_t min = array[start];
 	for (int i = 1; i < size; i ++) {
-		long long value = array[(start + i) % maxSize];
+		int64_t value = array[(start + i) % maxSize];
 		if(value < min) {
 			min = value;
 		}
@@ -116,8 +116,8 @@ long long min(long long* array, int start, int size, int maxSize) {
 
 // |rttl - rttf| <= errRTT * min(Wrtt)
 int rttRoutePreserved(SicData* sic) {
-	long long smaller;
-	long long bigger;
+	int64_t smaller;
+	int64_t bigger;
 	if(sic->rttFirst >= sic->rttLast) {
 		smaller = sic->rttLast;
 		bigger = sic->rttFirst;

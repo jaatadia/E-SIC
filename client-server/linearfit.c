@@ -7,53 +7,50 @@
 void initCircularLinearFitArray(CircularLinearFitArray* array){
 	array->nextPos = 0;
 	array->size = 0;
-	array->Sx = 0;
-	array->Sy = 0;
-	array->Sxx = 0;
-	array->Sxy = 0;
 }
 
-void insertPoint(CircularLinearFitArray* array, double newX, double newY) {
+void insertPoint(CircularLinearFitArray* array, int64_t newX, int64_t newY) {
 	#ifdef DEBUG
 	printf("linearfit.c: new point x: %f y: %f\n", newX, newY);	
 	#endif
 
-	int nextPos = array->nextPos;
-	if(array->size == CICRULAR_LINEAR_FIT_ARRAY_MAX_SIZE) {
-		double x = array->array[nextPos].x;
-		double y = array->array[nextPos].y;
-		array->Sx -= x;
-		array->Sy -= y;
-		array->Sxx -= x * x;
-		array->Sxy -= x * y;
-	} else {
+	array->array[array->nextPos].x = newX;
+	array->array[array->nextPos].y = newY;
+
+	if(array->size < CICRULAR_LINEAR_FIT_ARRAY_MAX_SIZE) {
 		array->size++;
 	}
-	double x = newX;
-	double y = newY;
-	array->Sx += x;
-	array->Sy += y;
-	array->Sxx += x * x;
-	array->Sxy += x * y;
-	array->array[nextPos].x = x;
-	array->array[nextPos].y = y;
 
-	array->nextPos = (nextPos + 1) % CICRULAR_LINEAR_FIT_ARRAY_MAX_SIZE;
+	array->nextPos = (array->nextPos + 1) % CICRULAR_LINEAR_FIT_ARRAY_MAX_SIZE;
 }
 
 #include <stdio.h>
 void linearFit(CircularLinearFitArray* array) {	
 	int n = array->size;
-	double delta = n*array->Sxx - array->Sx*array->Sx;
 
-	array->m = (n*array->Sxy - array->Sx*array->Sy)/delta;
-	array->c = (array->Sxx*array->Sy - array->Sx*array->Sxy)/delta;
+	double Sx = 0;
+	double Sy = 0;
+	double Sxx = 0;
+	double Sxy = 0;
+
+	for (int i = 0; i < n; ++i)
+	{
+		double x = array->array[i].x;
+		double y = array->array[i].y;
+		Sx += x;
+		Sy += y;
+		Sxx += x*x;
+		Sxy += x*y;
+	}
+	
+	double delta = n*Sxx - Sx*Sx;
+	array->m = (n*Sxy - Sx*Sy)/delta;
+	array->c = (Sxx*Sy - Sx*Sxy)/delta;
 
 	#ifdef DEBUG
 	printf("linearfit.c: new linear fit m: %f c: %f\n", array->m, array->c);
 	#endif
 }
-
 
 
 /*

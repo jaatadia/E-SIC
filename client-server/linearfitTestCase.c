@@ -29,10 +29,10 @@ void correctLinearFit(){
 	linearFit(&circularLinearFitArray);
 
 	assert("Partially filled nextPos", circularLinearFitArray.nextPos, 3);
-	assert("Partially filled Sx", circularLinearFitArray.Sx, 1 + 2 + 3);
-	assert("Partially filled Sxx", circularLinearFitArray.Sxx, 1*1 + 2*2 + 3*3);
-	assert("Partially filled Sy", circularLinearFitArray.Sy, 1 + 2 + 3);
-	assert("Partially filled Sxy", circularLinearFitArray.Sxy, 1*1 + 2*2 + 3*3);
+	// assert("Partially filled Sx", circularLinearFitArray.Sx, 1 + 2 + 3);
+	// assert("Partially filled Sxx", circularLinearFitArray.Sxx, 1*1 + 2*2 + 3*3);
+	// assert("Partially filled Sy", circularLinearFitArray.Sy, 1 + 2 + 3);
+	// assert("Partially filled Sxy", circularLinearFitArray.Sxy, 1*1 + 2*2 + 3*3);
 	assert("Partially filled linearfit slope", circularLinearFitArray.m, 1);
 	assert("Partially filled linearfit intercept", circularLinearFitArray.c, 0);
 
@@ -42,10 +42,10 @@ void correctLinearFit(){
 	insertPoint(&circularLinearFitArray, 4, 9);
 	linearFit(&circularLinearFitArray);
 	assert("Fully filled nextPos", circularLinearFitArray.nextPos, 3);
-	assert("Fully filled Sx", circularLinearFitArray.Sx, 1 + 2 + 3 + 4);
-	assert("Fully filled Sxx", circularLinearFitArray.Sxx, 1*1 + 2*2 + 3*3 + 4*4);
-	assert("Fully filled Sy", circularLinearFitArray.Sy, 3 + 5 + 7 + 9);
-	assert("Fully filled Sxy", circularLinearFitArray.Sxy, 1*3 + 2*5 + 3*7 + 4*9);
+	// assert("Fully filled Sx", circularLinearFitArray.Sx, 1 + 2 + 3 + 4);
+	// assert("Fully filled Sxx", circularLinearFitArray.Sxx, 1*1 + 2*2 + 3*3 + 4*4);
+	// assert("Fully filled Sy", circularLinearFitArray.Sy, 3 + 5 + 7 + 9);
+	// assert("Fully filled Sxy", circularLinearFitArray.Sxy, 1*3 + 2*5 + 3*7 + 4*9);
 	assert("Fully filled linearfit slope", circularLinearFitArray.m, 2);
 	assert("Fully filled linearfit intercept", circularLinearFitArray.c, 1);
 

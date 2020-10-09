@@ -7,13 +7,13 @@
 
 #include <stdint.h> 
 
-long long epochInMicros();
+int64_t epochInMicros();
 
 //Writes the timestamp in a networksafeway using two positions of the response array starting in pos.
 //we cannot use uint64 due to esp32 being 32bit architecture.
-void encodeEpochInMicros(long long timestamp, int32_t* response, int pos);
+void encodeEpochInMicros(int64_t timestamp, int32_t* response, int pos);
 
 //obtains the timestampe from the position pos of the response array encoded using encodeEpochInMicros.
-long long decodeEpochInMicros(int32_t* response, int pos);
+int64_t decodeEpochInMicros(int32_t* response, int pos);
 
 #endif

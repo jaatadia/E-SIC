@@ -5,16 +5,18 @@
 #define CIRCULAR_ORDERED_ARRAY_MAX_SIZE 600
 #endif
 
+#include <stdint.h>
+
 struct CircularOrderedArray { 
 	int next;
 	int size;
-	double fifo[CIRCULAR_ORDERED_ARRAY_MAX_SIZE];
-	double array[CIRCULAR_ORDERED_ARRAY_MAX_SIZE];
+	int64_t fifo[CIRCULAR_ORDERED_ARRAY_MAX_SIZE];
+	int64_t array[CIRCULAR_ORDERED_ARRAY_MAX_SIZE];
 };
 
 typedef struct CircularOrderedArray CircularOrderedArray;
 
 void initCircularOrderedArray(CircularOrderedArray *);
-void insertOrdered(CircularOrderedArray *, double );
-double median(CircularOrderedArray *);
+void insertOrdered(CircularOrderedArray *, int64_t );
+int64_t median(CircularOrderedArray *);
 #endif
