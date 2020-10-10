@@ -17,17 +17,26 @@ void assert(char* testName, int actual, int expected) {
 	
 }
 
-void assertPositions(char* testName, double * arrayActual, double * arrayExpected, int size){
+int64_t f_value(Node * node){
+	return node->value;
+}
+
+int64_t f_order(Node * node){
+	return node->order;
+}
+
+void assertPositions(char* testName, Node * arrayActual, int64_t(*fn)(Node*), int64_t * arrayExpected, int size){
 
 	int fail = 0;
 	
 	printf("Test: %s. ", testName);	
 	for (int i = 0; i < size; i++){
-		if(arrayActual[i] == arrayExpected[i]){
-			printf(" %f✓", arrayActual[i]);	
+		int64_t actual = (*fn)(&arrayActual[i]);
+		if(actual == arrayExpected[i]){
+			printf(" %ld✓", actual);	
 		} else {
 			fail = 1;
-			printf(" %f!=%f", arrayActual[i], arrayExpected[i]);	
+			printf(" %ld!=%ld", actual, arrayExpected[i]);	
 		}
 	}
 
@@ -52,39 +61,39 @@ void correctInsertStarting() {
 	assert("0. nextPos", array.next, 0);
 
 	insertOrdered(&array, 2);
-	double fifo[] = {2};
-	double ordered[] = {2};
+	int64_t value[] = {2};
+	int64_t order[] = {0};
 	assert("1. size", array.size, 1);
-	assert("1. nextPos", array.next, 0);	
-	assertPositions("1. fifo", array.fifo, fifo, 1);
-	assertPositions("1. ordered", array.array, ordered, 1);
+	assert("1. nextPos", array.next, 1);	
+	assertPositions("1. value", array.array, f_value, value, 1);
+	assertPositions("1. order", array.array, f_order, order, 1);
 	assert("1. median", median(&array), 2);
 
 	insertOrdered(&array, 4);
-	double fifo2[] = {2, 4};
-	double ordered2[] = {2, 4};
+	int64_t value2[] = {2, 4};
+	int64_t order2[] = {0, 1};
 	assert("2. size", array.size, 2);
-	assert("2. nextPos", array.next, 0);	
-	assertPositions("2. fifo", array.fifo, fifo2, 2);
-	assertPositions("2. ordered", array.array, ordered2, 2);
+	assert("2. nextPos", array.next, 2);	
+	assertPositions("2. value", array.array, f_value, value2, 2);
+	assertPositions("2. order", array.array, f_order, order2, 2);
 	assert("2. median", median(&array), 4);
 
 	insertOrdered(&array, 3);
-	double fifo3[] = {2, 4, 3};
-	double ordered3[] = {2, 3, 4};
+	int64_t value3[] = {2, 3, 4};
+	int64_t order3[] = {0, 2, 1};
 	assert("3. size", array.size, 3);
-	assert("3. nextPos", array.next, 0);	
-	assertPositions("3. fifo", array.fifo, fifo3, 3);
-	assertPositions("3. ordered", array.array, ordered3, 3);
+	assert("3. nextPos", array.next, 3);	
+	assertPositions("3. value", array.array, f_value, value3, 3);
+	assertPositions("3. order", array.array, f_order, order3, 3);
 	assert("3. median", median(&array), 3);
 
 	insertOrdered(&array, 0);
-	double fifo4[] = {2, 4, 3, 0};
-	double ordered4[] = {0, 2, 3, 4};
+	int64_t value4[] = {0, 2, 3, 4};
+	int64_t order4[] = {3, 0, 2, 1};
 	assert("4. size", array.size, 4);
-	assert("4. nextPos", array.next, 0);	
-	assertPositions("4. fifo", array.fifo, fifo4, 4);
-	assertPositions("4. ordered", array.array, ordered4, 4);
+	assert("4. nextPos", array.next, 4);	
+	assertPositions("4. value", array.array, f_value, value4, 4);
+	assertPositions("4. order", array.array, f_order, order4, 4);
 	assert("4. median", median(&array), 3);
 }
 
@@ -97,41 +106,46 @@ void correctInsertOnceFull() {
 		insertOrdered(&array, i);
 	}
 	
-	double fifo_0[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
-	double ordered_0[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+	
+	int64_t value_0[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+	int64_t order_0[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 	assert("_0. size", array.size, 10);
 	assert("_0. nextPos", array.next, 0);
-	assertPositions("_0. fifo", array.fifo, fifo_0, 10);
-	assertPositions("_0. ordered", array.array, ordered_0, 10);
+	assertPositions("_0. value", array.array, f_value, value_0, 10);
+	assertPositions("_0. order", array.array, f_order, order_0, 10);
 	assert("_0. median", median(&array), 5);
 
 	insertOrdered(&array, 2);
-	double fifo_1[] = {2, 1, 2, 3, 4, 5, 6, 7, 8, 9};
-	double ordered_1[] = {1, 2, 2, 3, 4, 5, 6, 7, 8, 9};
+	
+	int64_t value_1[] = {1, 2, 2, 3, 4, 5, 6, 7, 8, 9};
+	int64_t order_1[] = {1, 0, 2, 3, 4, 5, 6, 7, 8, 9};
 	assert("_1. size", array.size, 10);
 	assert("_1. nextPos", array.next, 1);
-	assertPositions("_1. fifo", array.fifo, fifo_1, 10);
-	assertPositions("_1. ordered", array.array, ordered_1, 10);
+	assertPositions("_1. value", array.array, f_value, value_1, 10);
+	assertPositions("_1. order", array.array, f_order, order_1, 10);
 	assert("_1. median", median(&array), 5);
 
 	insertOrdered(&array, 8);
-	double fifo_2[] = {2, 8, 2, 3, 4, 5, 6, 7, 8, 9};
-	double ordered_2[] = {2, 2, 3, 4, 5, 6, 7, 8, 8, 9};
+	
+	int64_t value_2[] = {2, 2, 3, 4, 5, 6, 7, 8, 8, 9};
+	int64_t order_2[] = {0, 2, 3, 4, 5, 6, 7, 1, 8, 9};
 	assert("_2. size", array.size, 10);
 	assert("_2. nextPos", array.next, 2);
-	assertPositions("_2. fifo", array.fifo, fifo_2, 10);
-	assertPositions("_2. ordered", array.array, ordered_2, 10);
+	assertPositions("_2. value", array.array, f_value, value_2, 10);
+	assertPositions("_2. order", array.array, f_order, order_2, 10);
 	assert("_2. median", median(&array), 6);
 
 	insertOrdered(&array, -1);
 	insertOrdered(&array, 1);
 	insertOrdered(&array, 0);
-	double fifo_3[] = {2, 8, -1, 1, 0, 5, 6, 7, 8, 9};
-	double ordered_3[] = {-1, 0, 1, 2, 5, 6, 7, 8, 8, 9};
+	
+	int64_t value_3[] = {-1, 0, 1, 2, 5, 6, 7, 8, 8, 9};
+	int64_t order_3[] = {2, 4, 3, 0, 5, 6, 7, 1, 8, 9};
+
 	assert("_3. size", array.size, 10);
 	assert("_3. nextPos", array.next, 5);
-	assertPositions("_3. fifo", array.fifo, fifo_3, 10);
-	assertPositions("_3. ordered", array.array, ordered_3, 10);
+	assertPositions("_3. value", array.array, f_value, value_3, 10);
+	assertPositions("_3. order", array.array, f_order, order_3, 10);
 	assert("_3. median", median(&array), 6);
 }
 

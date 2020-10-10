@@ -1,9 +1,3 @@
-/*
- * linearfit.h
- *
- *  Created on: May 24, 2020
- *      Author: jaatadia@gmail.com
- */
 #ifndef LINEAR_FIT_H
 #define LINEAR_FIT_H
 
@@ -25,20 +19,15 @@ struct CircularLinearFitArray {
 	int nextPos;
 	Point array[CICRULAR_LINEAR_FIT_ARRAY_MAX_SIZE];
 
-	int64_t Sx;
-	int64_t Sy;
-	double Sxx;
-	double Sxy;
-
 	double m;
-	int64_t c;
+	double c;
 };
 
 typedef struct CircularLinearFitArray CircularLinearFitArray;
 
 void initCircularLinearFitArray(CircularLinearFitArray* response);
 
-void insertPoint(CircularLinearFitArray* response, int64_t median, int64_t t4);
+void insertPoint(CircularLinearFitArray* response, int64_t median, int64_t t1);
 
 void linearFit(CircularLinearFitArray* response);
 

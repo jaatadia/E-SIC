@@ -1,8 +1,11 @@
 #include "sic.h"
+#include <stdlib.h>
 #include <stdio.h>
 
 int successTests = 0;
 int failedTests = 0;
+int true = 1;
+int seed = 1111;
 
 void assert(char* testName, int actual, int expected) {
 	int condition = expected == actual;
@@ -17,6 +20,9 @@ void assert(char* testName, int actual, int expected) {
 	
 }
 
+int randUpTo(int max) {
+	return rand() % max;
+}
 
 void syncStatesTestCase() {
 	SicData sic;
@@ -70,6 +76,104 @@ void syncStatesTestCase() {
 	assert("reSync steps", sic.syncSteps, 0);
 }
 
+void parallel() {
+	SicData sicA;
+	SicData sicB;
+	sicInit(&sicA);
+	sicInit(&sicB);
+	
+	int64_t serverTime = 1602262903000000;
+	int64_t serverDelay = 50;
+	int64_t startTimeA = 1000;
+	int64_t startTimeB = 2222;
+	int64_t tAS = 2222;
+	int64_t tBS = 5333;
+	
+	for(int i=0; i< 720; i++){
+		int64_t timeSinceStart = i*1000000;
+		sicStep(&sicA, 
+			timeSinceStart + startTimeA, 
+			timeSinceStart + tAS + serverTime, 
+			timeSinceStart + tAS + serverTime + serverDelay,
+			timeSinceStart + startTimeA + tAS + tAS + serverDelay);
+
+		sicStep(&sicB, 
+			timeSinceStart + startTimeB, 
+			timeSinceStart + tBS + serverTime, 
+			timeSinceStart + tBS + serverTime + serverDelay,
+			timeSinceStart + startTimeB + tBS + tBS + serverDelay);
+	}
+
+	int64_t timeSinceStart = 800*1000000;
+	int64_t tS = timeSinceStart + serverTime;
+	int64_t tS_A = sicTime(&sicA, timeSinceStart + startTimeA);
+	int64_t tS_B = sicTime(&sicB, timeSinceStart + startTimeB);
+	
+	printf("Parallel:\n");
+	printf("time ServerA: %ld.\n", tS);
+	printf("Server Time Acording to NodeA: %ld. Diff to RealServer: %ld.\n", tS_A, tS - tS_A);
+	printf("Server Time Acording to NodeB: %ld. Diff to RealServer: %ld.\n", tS_B, tS - tS_B);
+	
+	assert("Parallel: A in error margin", true, ((tS - tS_A) < 100) && ((tS - tS_A) > -100));
+	assert("Parallel: B in error margin", true, ((tS - tS_B) < 100) && ((tS - tS_B) > -100));
+}
+
+void parallelSimulatedVariations() {
+	SicData sicA;
+	SicData sicB;
+	sicInit(&sicA);
+	sicInit(&sicB);
+	
+	int maxVariation = 1000;
+	int64_t serverTime = 1602262903000000;
+	int64_t serverDelay = 50;
+	int64_t startTimeA = 1000;
+	int64_t startTimeB = 2222;
+	int64_t tAS = 2222;
+	int64_t tBS = 5333;
+	
+	for(int i=0; i< 720; i++){
+
+		int64_t timeSinceStart = i*1000000 + randUpTo(200000);
+
+		int64_t timeSinceStartA = timeSinceStart + randUpTo(maxVariation);
+		int64_t vtAS = tAS + randUpTo(maxVariation);
+		int64_t vtSA = tAS + randUpTo(maxVariation);
+		int64_t vserverDelayA = serverDelay + randUpTo(maxVariation);
+
+		int64_t timeSinceStartB = timeSinceStart + randUpTo(maxVariation);
+		int64_t vtBS = tBS + randUpTo(maxVariation);
+		int64_t vtSB = tBS + randUpTo(maxVariation);
+		int64_t vserverDelayB = serverDelay + randUpTo(maxVariation);
+
+		sicStep(&sicA, 
+			timeSinceStartA + startTimeA, 
+			timeSinceStartA + vtAS + serverTime, 
+			timeSinceStartA + vtAS + serverTime + vserverDelayA,
+			timeSinceStartA + startTimeA + vtAS + vtSA + vserverDelayA);
+
+		sicStep(&sicB, 
+			timeSinceStartB + startTimeB, 
+			timeSinceStartB + vtBS + serverTime, 
+			timeSinceStartB + vtBS + serverTime + vserverDelayB,
+			timeSinceStartB + startTimeB + vtBS + vtSB + vserverDelayB);
+	}
+
+	int64_t timeSinceStart = 800*1000000;
+	int64_t tS = timeSinceStart + serverTime;
+	int64_t tS_A = sicTime(&sicA, timeSinceStart + startTimeA);
+	int64_t tS_B = sicTime(&sicB, timeSinceStart + startTimeB);
+	
+	printf("Parallel Variations:\n");
+	printf("time ServerA: %ld.\n", tS);
+	printf("Server Time Acording to NodeA: %ld. Diff to RealServer: %ld.\n", tS_A, tS - tS_A);
+	printf("Server Time Acording to NodeB: %ld. Diff to RealServer: %ld.\n", tS_B, tS - tS_B);
+	
+	assert("Parallel Variations: A in error margin", true, ((tS - tS_A) < 100) && ((tS - tS_A) > -100));
+	assert("Parallel Variations: B in error margin", true, ((tS - tS_B) < 100) && ((tS - tS_B) > -100));
+}
+
+
 void syncNoDifferenceInClocks() {
 	SicData sic;
 	sicInit(&sic);
@@ -110,10 +214,14 @@ void syncServerInPast() {
 }
 
 int main(int argc, char** argv){
+	srand(seed);
+
 	syncStatesTestCase();
 	syncNoDifferenceInClocks();
 	syncServerInFuture();
 	syncServerInPast();
+	parallel();
+	parallelSimulatedVariations();
 
 
 	//TODO extract testing logic to its own module

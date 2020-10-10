@@ -26,9 +26,9 @@ struct SicData {
 
     int rttNextPos;
 	int rttSize;
-    long long Wrtt[2 * MEDIAN_MAX_SIZE];
-    long long rttFirst;
-    long long rttLast;
+    int64_t Wrtt[2 * MEDIAN_MAX_SIZE];
+    int64_t rttFirst;
+    int64_t rttLast;
 
     double actual_m;
     double actual_c;
@@ -38,9 +38,9 @@ typedef struct SicData SicData;
 
 void sicInit(SicData* sic);
 void sicStepTimeout(SicData* sic);
-void sicStep(SicData* sic, long long t1, long long t2, long long t3, long long t4);
+void sicStep(SicData* sic, int64_t t1, int64_t t2, int64_t t3, int64_t t4);
 
 int sicTimeAvailable(SicData* sic);
-long long sicTime(SicData* sic, long long systemClock);
+int64_t sicTime(SicData* sic, int64_t systemClock);
 
 #endif

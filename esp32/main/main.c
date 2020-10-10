@@ -4,6 +4,7 @@
  *  Created on: May 24, 2020
  *      Author: jaatadia@gmail.com
  */
+#include <daemon.h>
 #include <stdio.h>
 #include <stdint.h>
 #include "sdkconfig.h"
@@ -11,9 +12,10 @@
 #include "freertos/task.h"
 #include "esp_system.h"
 #include "esp_spi_flash.h"
+#include "esp_timer.h"
 
 #include "wifi.h"
-#include "tic-toc.h"
+#include "daemon.h"
 #include "microtime.h"
 
 #define TICTOC_SERVER "192.168.0.146"
@@ -31,7 +33,7 @@ void app_main(void)
 
     	char ticToctimestamp[64];
     	char timestamp[64];
-		microsToTimestamp(epochInMicros(), timestamp);
+		microsToTimestamp(esp_timer_get_time(), timestamp);
     	if(!ticTocReady(ticTocData)) {
     		printf("Waiting for ticTocTo be ready. (systemTime: %s)\n", timestamp);
     	} else {
