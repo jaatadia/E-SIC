@@ -47,8 +47,8 @@ void sicStepTimeout(SicData* sic){
 
 void sicStep(SicData* sic, int64_t t1, int64_t t2, int64_t t3, int64_t t4) {
 	sic->to=0;
-	insertOrdered(&sic->Wm, t1 - t2 + (t2 - t1 + t4 - t3) / 2.0); // Wm <- t1 - t2 + (t2 - t1 + t4 - t3) / 2.0 
-	insertPoint(&sic->Wmedian, t1, median(&sic->Wm)); // Wmedian <- (t1, median(Wm))
+	insertOrdered(&sic->Wm, t4 - t3 - (t2 - t1 + t4 - t3) / 2.0); // Wm <- t1 - t2 + (t2 - t1 + t4 - t3) / 2.0 
+	insertPoint(&sic->Wmedian, t4, median(&sic->Wm)); // Wmedian <- (t1, median(Wm))
 	sic->syncSteps++;
 
 	/* updateRoundTripTime(sic, t4 - t1);

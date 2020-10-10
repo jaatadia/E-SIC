@@ -76,6 +76,38 @@ void syncStatesTestCase() {
 	assert("reSync steps", sic.syncSteps, 0);
 }
 
+void syncServerDobleFrequency() {
+	SicData sicA;
+	sicInit(&sicA);
+	
+	int64_t serverTime = 1602262903000000;
+	int64_t serverDelay = 50;
+	int64_t startTimeA = 1000;
+	int64_t tAS = 2222;
+	
+	double f_multiplier = 1.00001;
+
+	for(int i=0; i< 720; i++){
+		int64_t timeSinceStart = i*1000000;
+		sicStep(&sicA, 
+			startTimeA + f_multiplier * timeSinceStart , 
+			timeSinceStart + tAS + serverTime, 
+			timeSinceStart + tAS + serverTime + serverDelay,
+			startTimeA + f_multiplier * (timeSinceStart + tAS + tAS + serverDelay));
+	}
+
+	int64_t timeSinceStart = 800*1000000;
+	int64_t tS = timeSinceStart + serverTime;
+	int64_t tS_A = sicTime(&sicA, f_multiplier * timeSinceStart + startTimeA);
+	
+	printf("frequency:\n");
+	printf("time ServerA: %ld.\n", tS);
+	printf("Server Time Acording to NodeA: %ld. Diff to RealServer: %ld.\n", tS_A, tS - tS_A);
+	
+	assert("Parallel: A in error margin", true, ((tS - tS_A) < 100) && ((tS - tS_A) > -100));
+}
+
+
 void parallel() {
 	SicData sicA;
 	SicData sicB;
@@ -216,13 +248,13 @@ void syncServerInPast() {
 int main(int argc, char** argv){
 	srand(seed);
 
-	syncStatesTestCase();
+	/*syncStatesTestCase();
 	syncNoDifferenceInClocks();
 	syncServerInFuture();
 	syncServerInPast();
 	parallel();
-	parallelSimulatedVariations();
-
+	parallelSimulatedVariations();*/
+	syncServerDobleFrequency();
 
 	//TODO extract testing logic to its own module
 	printf("\n-------------------------------------------------------\n");
