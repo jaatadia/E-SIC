@@ -1,9 +1,3 @@
-/*
- * sic.h
- *
- *  Created on: May 24, 2020
- *      Author: jaatadia@gmail.com
- */
 #ifndef SIC_H
 #define SIC_H
 
@@ -19,7 +13,6 @@
 #define PRE_SYNC 2
 #define SYNC 3
 
-#include <stdint.h>
 #include "linearfit.h"
 #include "circularOrderedArray.h"
 
@@ -31,8 +24,14 @@ struct SicData {
     CircularOrderedArray Wm;
     CircularLinearFitArray Wmedian;
 
+    int rttNextPos;
+	int rttSize;
+    int64_t Wrtt[2 * MEDIAN_MAX_SIZE];
+    int64_t rttFirst;
+    int64_t rttLast;
+
     double actual_m;
-    int64_t actual_c;
+    double actual_c;
 };
 
 typedef struct SicData SicData;

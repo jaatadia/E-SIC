@@ -6,7 +6,6 @@
 #include <sys/types.h> 
 #include <sys/socket.h> 
 #include <netinet/in.h> 
-#include <arpa/inet.h>
 #include <sys/time.h>
 #include "microtime.h"
 
@@ -59,8 +58,8 @@ int main() {
 		encodeEpochInMicros(epochInMicros(), &timestamps, 3*2);
 		printf("Received timestamps\n"); 	
 		for(int i = 0; i<4; i++) {
-			printf("t%d: %lld\n", i + 1, (long long) decodeEpochInMicros(&timestamps, i*2)); 	
-		}
+			printf("t%d: %lld\n", i + 1, decodeEpochInMicros(&timestamps, i*2)); 	
+		}	
 	} else {
 		printf("timeout\n");
 	}

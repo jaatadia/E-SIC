@@ -1,9 +1,3 @@
-/*
- * circularOrderedArray.h
- *
- *  Created on: May 24, 2020
- *      Author: jaatadia@gmail.com
- */
 #ifndef CIRCULAR_ORDERED_ARRAY_H
 #define CIRCULAR_ORDERED_ARRAY_H
 
@@ -13,11 +7,17 @@
 
 #include <stdint.h>
 
+struct Node {
+	int64_t value;
+	int order;
+};
+
+typedef struct Node Node;
+
 struct CircularOrderedArray { 
 	int next;
 	int size;
-	int64_t fifo[CIRCULAR_ORDERED_ARRAY_MAX_SIZE];
-	int64_t array[CIRCULAR_ORDERED_ARRAY_MAX_SIZE];
+	Node array[CIRCULAR_ORDERED_ARRAY_MAX_SIZE];
 };
 
 typedef struct CircularOrderedArray CircularOrderedArray;

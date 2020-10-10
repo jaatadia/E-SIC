@@ -20,7 +20,7 @@ struct CircularLinearFitArray {
 	Point array[CICRULAR_LINEAR_FIT_ARRAY_MAX_SIZE];
 
 	double m;
-	int64_t c;
+	double c;
 };
 
 typedef struct CircularLinearFitArray CircularLinearFitArray;

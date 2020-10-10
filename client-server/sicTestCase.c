@@ -134,7 +134,7 @@ void parallelSimulatedVariations() {
 	
 	for(int i=0; i< 720; i++){
 
-		int64_t timeSinceStart = i*1000000;
+		int64_t timeSinceStart = i*1000000 + randUpTo(200000);
 
 		int64_t timeSinceStartA = timeSinceStart + randUpTo(maxVariation);
 		int64_t vtAS = tAS + randUpTo(maxVariation);
@@ -216,10 +216,10 @@ void syncServerInPast() {
 int main(int argc, char** argv){
 	srand(seed);
 
-	//syncStatesTestCase();
-	//syncNoDifferenceInClocks();
-	//syncServerInFuture();
-	//syncServerInPast();
+	syncStatesTestCase();
+	syncNoDifferenceInClocks();
+	syncServerInFuture();
+	syncServerInPast();
 	parallel();
 	parallelSimulatedVariations();
 

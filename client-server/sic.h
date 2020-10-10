@@ -31,7 +31,7 @@ struct SicData {
     int64_t rttLast;
 
     double actual_m;
-    int64_t actual_c;
+    double actual_c;
 };
 
 typedef struct SicData SicData;

@@ -44,6 +44,9 @@ server: server.c microtime.o
 	$(COMPILER) server.c microtime.o -o server
 
 
+update: linearfit.h linearfit.c circularOrderedArray.h circularOrderedArray.c sic.h sic.c microtime.h microtime.c
+	cp linearfit.h linearfit.c circularOrderedArray.h circularOrderedArray.c sic.h sic.c microtime.h microtime.c ../esp32/main/tictoc
+
 compile: client server
 
 

@@ -4,11 +4,16 @@
  *  Created on: May 9, 2020
  *      Author: jaatadia@gmail.com
  */
+#include "daemon.h"
+
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <stdio.h>
-#include "tic-toc.h"
 #include "microtime.h"
+#include "esp_timer.h"
+#include <inttypes.h>
+
+#define TICTOC_DAEMON_DEBUG
 
 void setupServerAddr(struct sockaddr_in * servaddr, const char * serverIp, int serverPort) {
 	memset(servaddr, 0, sizeof(*servaddr));
@@ -56,28 +61,28 @@ void getTimeStamps(void * parameter){
 		size_t incomingSize = sizeof(int32_t) * 2 * 3;
 		socklen_t servaddrSize = sizeof(servaddr);
 
-		struct timeval t1;
-
 		for(;;) {
 			loopCount++;
 			//printRemainingStack("TicTocDaemon - Start Loop");
-			epoch(&t1);
-			timestamps[0]=htonl((int32_t)t1.tv_sec);
-			timestamps[1]=htonl((int32_t)t1.tv_usec);
+			encodeEpochInMicros(esp_timer_get_time(), timestamps, 0);
 
 			//sending t1
 			sendto(ticTocData->sock, (const int32_t *)timestamps, outGoingSize,  0, (const struct sockaddr *) &servaddr, servaddrSize);
 
 			if(recv(ticTocData->sock, (int32_t *)timestamps, incomingSize, MSG_WAITALL) == incomingSize){
-				for(int i = 0; i<3; i++) {
-					resultArray[i]=toMicros(ntohl(timestamps[2*i]), ntohl(timestamps[2*i+1]));
-				}
 				resultArray[3]=epochInMicros();
+				for(int i = 0; i<3; i++) {
+					resultArray[i]=decodeEpochInMicros(timestamps,2*i);
+				}
 
-				printf("TicTocDaemon %lld - t1:%lld t2:%lld t3:%lld t4:%lld\n", loopCount, resultArray[0], resultArray[1], resultArray[2], resultArray[3]);
+				#ifdef TICTOC_DAEMON_DEBUG
+				printf("TicTocDaemon %lld - t1:%"PRId64" t2:%"PRId64" t3:%"PRId64" t4:%"PRId64"\n", loopCount, resultArray[0], resultArray[1], resultArray[2], resultArray[3]);
+				#endif
 				sicStep(&ticTocData->sicdata, resultArray[0], resultArray[1], resultArray[2], resultArray[3]);
 			} else {
+				#ifdef TICTOC_DAEMON_DEBUG
 				printf("TicTocDaemon timeout\n");
+				#endif
 				sicStepTimeout(&ticTocData->sicdata);
 			}
 
@@ -113,14 +118,14 @@ void setupTicToc(TicTocData* ticToc, const char * serverIp, int serverPort)
 	    ticToc,						// Parameter to pass
 		TIC_TOC_DAEMON_PRIORITY,	// Task priority
 	    NULL,             			// Task handle
-			0						// Execution Core
+		1						    // Execution Core
 	  );
 }
 
-int ticTocReady(TicTocData * ticTocData){
+int IRAM_ATTR ticTocReady(TicTocData * ticTocData){
 	return sicTimeAvailable(&ticTocData->sicdata);
 }
 
-int64_t ticTocTime(TicTocData * ticTocData){
-	return sicTime(&ticTocData->sicdata, epochInMicros());
+int64_t IRAM_ATTR ticTocTime(TicTocData * ticTocData){
+	return sicTime(&ticTocData->sicdata, esp_timer_get_time());
 }
