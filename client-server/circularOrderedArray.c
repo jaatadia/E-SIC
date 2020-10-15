@@ -15,17 +15,17 @@ void swap(Node * first, Node * second){
 	//aux = first
 	aux.value = first->value;
 	aux.order = first->order;
-	aux.t = first->t;
+	aux.time = first->time;
 	 
 	//first = second 
 	first->value = second->value;
 	first->order = second->order;
-	first->t = second->t;
+	first->time = second->time;
 
 	//second = aux
 	second->value = aux.value;
 	second->order = aux.order;
-	second->t = aux.t;
+	second->time = aux.time;
 }
 
 int orderRight(Node * array, int position, int size){
@@ -81,7 +81,7 @@ void insertOrderedWithTime(CircularOrderedArray* array, int64_t value, int64_t t
 	}
 
 	array->array[insertPosition].value=value;
-	array->array[insertPosition].t=time;
+	array->array[insertPosition].time=time;
 	array->array[insertPosition].order=array->next;
 	array->next = (array->next + 1) % CIRCULAR_ORDERED_ARRAY_MAX_SIZE;
 

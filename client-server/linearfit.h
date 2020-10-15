@@ -14,6 +14,13 @@ struct Point {
 
 typedef struct Point Point;
 
+struct LinearFitResult {
+	double m;
+	double c;
+};
+
+typedef struct LinearFitResult LinearFitResult;
+
 struct CircularLinearFitArray { 
 	int size;
 	int nextPos;
@@ -30,5 +37,6 @@ void initCircularLinearFitArray(CircularLinearFitArray* response);
 void insertPoint(CircularLinearFitArray* response, int64_t median, int64_t t1);
 
 void linearFit(CircularLinearFitArray* response);
+void linearFitFunction(void* array, int start, int end, double(*fx)(void*, int), double(*fy)(void*, int), LinearFitResult* result);
 
 #endif

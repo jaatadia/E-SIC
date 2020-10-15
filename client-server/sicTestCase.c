@@ -76,7 +76,7 @@ void syncStatesTestCase() {
 	assert("reSync steps", sic.syncSteps, 0);
 }
 
-void syncServerDobleFrequency() {
+void syncServerDifFrequency() {
 	SicData sicA;
 	sicInit(&sicA);
 	
@@ -85,7 +85,7 @@ void syncServerDobleFrequency() {
 	int64_t startTimeA = 1000;
 	int64_t tAS = 2222;
 	
-	double f_multiplier = 1.00001;
+	double f_multiplier = 1.01;
 
 	for(int i=0; i< 720; i++){
 		int64_t timeSinceStart = i*1000000;
@@ -248,13 +248,13 @@ void syncServerInPast() {
 int main(int argc, char** argv){
 	srand(seed);
 
-	/*syncStatesTestCase();
+	syncStatesTestCase();
 	syncNoDifferenceInClocks();
 	syncServerInFuture();
 	syncServerInPast();
 	parallel();
-	parallelSimulatedVariations();*/
-	syncServerDobleFrequency();
+	parallelSimulatedVariations();
+	syncServerDifFrequency();
 
 	//TODO extract testing logic to its own module
 	printf("\n-------------------------------------------------------\n");

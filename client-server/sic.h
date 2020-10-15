@@ -1,7 +1,16 @@
 #ifndef SIC_H
 #define SIC_H
 
-#define MEDIAN_MAX_SIZE 600
+#include "linearfit.h"
+#include "circularOrderedArray.h"
+
+#define RTT_SIZE CIRCULAR_ORDERED_ARRAY_MAX_SIZE
+
+//With the new implementation, indicate where to start and stop 
+#define SAMPLES_SIZE CIRCULAR_ORDERED_ARRAY_MAX_SIZE
+#define SIC_START_POS CIRCULAR_ORDERED_ARRAY_MAX_SIZE/2 - 30
+#define SIC_END_POS CIRCULAR_ORDERED_ARRAY_MAX_SIZE/2 + 30
+
 #define P 60
 #define ALPHA 0.05
 #define TIMEOUT 0.8
@@ -13,20 +22,16 @@
 #define PRE_SYNC 2
 #define SYNC 3
 
-#include "linearfit.h"
-#include "circularOrderedArray.h"
-
 struct SicData { 
 	int state;
 	int syncSteps;
     int to;
 
     CircularOrderedArray Wm;
-    CircularLinearFitArray Wmedian;
 
     int rttNextPos;
 	int rttSize;
-    int64_t Wrtt[2 * MEDIAN_MAX_SIZE];
+    int64_t Wrtt[2 * RTT_SIZE];
     int64_t rttFirst;
     int64_t rttLast;
 

@@ -7,11 +7,13 @@ void updateRoundTripTime(SicData* sic, int64_t rtt);
 int64_t min(int64_t* array, int start, int size, int maxSize);
 int rttChangeDectected(SicData* sic);
 
+double getPhi(void * array, int pos);
+double getTime(void * array, int pos);
+
 void sicReset(SicData* sic){
 	sic->syncSteps = 0;
 	
 	initCircularOrderedArray(&sic->Wm);
-	initCircularLinearFitArray(&sic->Wmedian);
 
     sic->rttNextPos = 0;
     sic->rttSize = 0;
@@ -48,8 +50,6 @@ void sicStepTimeout(SicData* sic){
 void sicStep(SicData* sic, int64_t t1, int64_t t2, int64_t t3, int64_t t4) {
 	sic->to=0;
 	insertOrderedWithTime(&sic->Wm, t4 - t3 - (t2 - t1 + t4 - t3) / 2.0, t4); // Wm <- t1 - t2 + (t2 - t1 + t4 - t3) / 2.0 
-	Node* median = medianNode(&sic->Wm);
-	insertPoint(&sic->Wmedian, median->t, median->value); // Wmedian <- (t1, median(Wm))
 	sic->syncSteps++;
 
 	/* updateRoundTripTime(sic, t4 - t1);
@@ -58,25 +58,37 @@ void sicStep(SicData* sic, int64_t t1, int64_t t2, int64_t t3, int64_t t4) {
 	} */
 
 	if ((sic->state == PRE_SYNC || sic->state == SYNC) && sic->syncSteps == P) {
-		linearFit(&sic->Wmedian);
+		LinearFitResult result;
+		linearFitFunction(&sic->Wm, SIC_START_POS, SIC_END_POS, getTime, getPhi, &result);
 		sic->state = SYNC;
 		sic->syncSteps = 0;
-		sic->actual_m = (1 - ALPHA) * sic->Wmedian.m + ALPHA * sic->actual_m;
-		sic->actual_c = (1 - ALPHA) * sic->Wmedian.c + ALPHA * sic->actual_c;	
+		sic->actual_m = (1 - ALPHA) * result.m + ALPHA * sic->actual_m;
+		sic->actual_c = (1 - ALPHA) * result.c + ALPHA * sic->actual_c;	
 		#ifdef TICTOC_SIC_DEBUG
 		printf("SIC - Entered SYNC state: new m: %f c: %f\n.", sic->actual_m, sic->actual_c);
 		#endif
-	} else if((sic->state == NO_SYNC || sic->state == RE_SYNC) && sic->syncSteps == P + MEDIAN_MAX_SIZE) {
-		linearFit(&sic->Wmedian);
+	} else if((sic->state == NO_SYNC || sic->state == RE_SYNC) && sic->syncSteps == P + SAMPLES_SIZE) {
+		LinearFitResult result;
+		linearFitFunction(&sic->Wm, SIC_START_POS, SIC_END_POS, getTime, getPhi, &result);
 		sic->state = PRE_SYNC;
 		sic->syncSteps = 0;
-		sic->actual_m = sic->Wmedian.m;
-		sic->actual_c = sic->Wmedian.c;
+		sic->actual_m = result.m;
+		sic->actual_c = result.c;
 		#ifdef TICTOC_SIC_DEBUG
 		printf("SIC - Entered PRE_SYNC state: new m: %f c: %f\n.", sic->actual_m, sic->actual_c);
 		#endif
 	} 
 }
+
+double getPhi(void * array, int pos){
+	return ((CircularOrderedArray*) array)->array[pos].value;
+}
+
+double getTime(void * array, int pos){
+	return ((CircularOrderedArray*) array)->array[pos].time;
+}
+
+
 
 int sicTimeAvailable(SicData* sic){
 	return sic->state > NO_SYNC;
@@ -89,19 +101,19 @@ int64_t sicTime(SicData* sic, int64_t systemClock){
 
 // TODO optimize and extract this
 void updateRoundTripTime(SicData* sic, int64_t rtt) {
-	if(sic->rttSize == 2 * MEDIAN_MAX_SIZE) {
+	if(sic->rttSize == 2 * RTT_SIZE) {
 		sic->Wrtt[sic->rttNextPos] = rtt;
-		sic->rttNextPos = (sic->rttNextPos + 1) % (2 * MEDIAN_MAX_SIZE);
+		sic->rttNextPos = (sic->rttNextPos + 1) % (2 * RTT_SIZE);
 
 		sic->rttFirst = min(sic->Wrtt, 
 			sic->rttNextPos,
-			MEDIAN_MAX_SIZE,
-			2 * MEDIAN_MAX_SIZE); 
+			RTT_SIZE,
+			2 * RTT_SIZE); 
 
 		sic->rttLast = min(sic->Wrtt, 
-			(sic->rttNextPos + MEDIAN_MAX_SIZE) % (2 * MEDIAN_MAX_SIZE),
-			MEDIAN_MAX_SIZE,
-			 2 * MEDIAN_MAX_SIZE);
+			(sic->rttNextPos + RTT_SIZE) % (2 * RTT_SIZE),
+			RTT_SIZE,
+			 2 * RTT_SIZE);
 	} else {
 		sic->Wrtt[sic->rttSize] = rtt;
 		sic->rttSize++;
@@ -109,12 +121,12 @@ void updateRoundTripTime(SicData* sic, int64_t rtt) {
 		sic->rttFirst = min(sic->Wrtt, 
 			0, 
 			sic->rttSize / 2,
-			2 * MEDIAN_MAX_SIZE);
+			2 * RTT_SIZE);
 
 		sic->rttLast = min(sic->Wrtt, 
 			sic->rttSize / 2, 
 			sic->rttSize / 2,
-			2 * MEDIAN_MAX_SIZE); 
+			2 * RTT_SIZE); 
 	}
 }
 

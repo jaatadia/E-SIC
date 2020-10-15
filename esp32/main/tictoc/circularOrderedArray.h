@@ -9,7 +9,7 @@
 
 struct Node {
 	int64_t value;
-	int64_t t;
+	int64_t time;
 	int order;
 };
 
