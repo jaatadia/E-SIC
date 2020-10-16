@@ -85,7 +85,7 @@ void syncServerDifFrequency() {
 	int64_t startTimeA = 1000;
 	int64_t tAS = 2222;
 	
-	double f_multiplier = 1.01;
+	double f_multiplier = 1 + 0.01;
 
 	for(int i=0; i< 720; i++){
 		int64_t timeSinceStart = i*1000000;
@@ -245,6 +245,78 @@ void syncServerInPast() {
 	assert("Synced algorithm server in past", sicTime(&sic, 1000000), 0);
 }
 
+struct ParsedT {
+	int64_t t[4];
+};
+
+typedef struct ParsedT ParsedT;
+
+#include <regex.h> 
+size_t ngroups = 0;
+int regInit = 0; 
+regmatch_t *groups = 0;
+regex_t reg; 
+
+void parseLine(ParsedT * parsed, char* line){
+	if (regInit==0){
+		if(regcomp(&reg, "^.*t1:([0-9]+) t2:([0-9]+) t3:([0-9]+) t4:([0-9]+).*$", REG_EXTENDED)!=0) exit(-10); 
+		ngroups = reg.re_nsub + 1;
+		groups = malloc(ngroups * sizeof(regmatch_t));
+		regInit = 1; 
+	}
+
+	if(regexec(&reg, line, ngroups, groups, 0) == REG_NOMATCH){
+		printf("line not matched: %s\n", line);
+		exit(-11);
+	};
+
+
+
+	for(int i = 0; i<4;i++){
+		parsed->t[i]=0;
+		for(int j = groups[i+1].rm_so; j< groups[i+1].rm_eo; j++) {
+			parsed->t[i] *= 10;
+			parsed->t[i] += line[j] - '0';
+		}
+	}
+}
+	
+void loadValues(SicData* sic, char* file){
+	FILE * fp;
+    char * line = NULL;
+    size_t len = 0;
+    ssize_t read;
+
+	ParsedT parsed;
+
+    if((fp = fopen(file, "r")) == 0) exit(-2);
+    while ((read = getline(&line, &len, fp)) != -1) {
+        //printf("line: %s", line);
+        parseLine(&parsed, line);
+		//printf("t1:%ld t2:%ld t3:%ld t4:%ld\n", parsed.t[0], parsed.t[1], parsed.t[2], parsed.t[3]);
+		sicStep(sic, parsed.t[0], parsed.t[1], parsed.t[2], parsed.t[3]);
+    }
+	fclose(fp);
+	free(line);
+}
+
+void fileTest(){
+	SicData sicA;
+	SicData sicB;
+	sicInit(&sicA);
+	sicInit(&sicB);
+
+	loadValues(&sicA, "./ESP1_tx.txt");
+	loadValues(&sicB, "./ESP2_tx.txt");
+
+	int64_t tS_A = sicTime(&sicA, 2144256047); // 2144274979 tt_Time: 1602777365723646 // TicTocDaemon 2142
+	int64_t tS_B = sicTime(&sicB, 2144301196); // 2144301196 tt_Time: 1602777365228340 // TicTocDaemon 2142
+
+	printf("Server Time Acording to NodeA: %ld. Server Acroding to NodeB: %ld. Diff: %ld.\n", tS_A, tS_B, tS_A - tS_B);
+	assert("Parallel Variations: A in error margin", true, ((tS_A - tS_B) < 100) && ((tS_A - tS_B) > -100));
+    
+}
+
 int main(int argc, char** argv){
 	srand(seed);
 
@@ -255,6 +327,10 @@ int main(int argc, char** argv){
 	parallel();
 	parallelSimulatedVariations();
 	syncServerDifFrequency();
+	fileTest();
+
+	//free resources
+	if(groups) free(groups);
 
 	//TODO extract testing logic to its own module
 	printf("\n-------------------------------------------------------\n");
