@@ -64,9 +64,13 @@ double getY(void* array, int pos) {
 	return ((Point*) array)[pos].y;
 }
 
+void linearFitResult(CircularLinearFitArray* array, LinearFitResult * result) {	
+	linearFitFunction(array->array, 0, array->size, getX, getY, result);
+}
+
 void linearFit(CircularLinearFitArray* array) {	
 	LinearFitResult result;
-	linearFitFunction(array->array, 0, array->size, getX, getY, &result);
+	linearFitResult(array, &result);
 	array->m = result.m;
 	array->c = result.c;
 }

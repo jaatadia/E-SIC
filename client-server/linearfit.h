@@ -34,9 +34,10 @@ typedef struct CircularLinearFitArray CircularLinearFitArray;
 
 void initCircularLinearFitArray(CircularLinearFitArray* response);
 
-void insertPoint(CircularLinearFitArray* response, int64_t median, int64_t t1);
+void insertPoint(CircularLinearFitArray* response, int64_t x, int64_t y);
 
 void linearFit(CircularLinearFitArray* response);
+void linearFitResult(CircularLinearFitArray* response, LinearFitResult* result);
 void linearFitFunction(void* array, int start, int end, double(*fx)(void*, int), double(*fy)(void*, int), LinearFitResult* result);
 
 #endif

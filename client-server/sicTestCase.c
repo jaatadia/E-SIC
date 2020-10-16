@@ -313,7 +313,7 @@ void fileTest(){
 	int64_t tS_B = sicTime(&sicB, 2144301196); // 2144301196 tt_Time: 1602777365228340 // TicTocDaemon 2142
 
 	printf("Server Time Acording to NodeA: %ld. Server Acroding to NodeB: %ld. Diff: %ld.\n", tS_A, tS_B, tS_A - tS_B);
-	assert("Parallel Variations: A in error margin", true, ((tS_A - tS_B) < 100) && ((tS_A - tS_B) > -100));
+	assert("fileTest: A B diff margin", true, ((tS_A - tS_B) < 100) && ((tS_A - tS_B) > -100));
     
 }
 

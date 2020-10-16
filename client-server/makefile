@@ -24,12 +24,17 @@ linearfitTest.o: linearfit.h linearfit.c
 linearfitTestCase: linearfitTestCase.c linearfitTest.o
 	$(COMPILER) -DCICRULAR_LINEAR_FIT_ARRAY_MAX_SIZE=4 linearfitTestCase.c linearfitTest.o -o linearfitTestCase
 
+halfSampleMode.o: halfSampleMode.h halfSampleMode.c
+	$(COMPILER) -c halfSampleMode.c -o halfSampleMode.o
+
+halfSampleModeTestCase: halfSampleModeTestCase.c halfSampleMode.o
+	$(COMPILER) halfSampleModeTestCase.c halfSampleMode.o -o halfSampleModeTestCase
 
 sic.o: sic.h sic.c
 	$(COMPILER) -c sic.c -o sic.o
 
-sicTestCase: sicTestCase.c sic.o linearfit.o circularOrderedArray.o
-	$(COMPILER) sicTestCase.c sic.o linearfit.o circularOrderedArray.o -o sicTestCase
+sicTestCase: sicTestCase.c sic.o linearfit.o circularOrderedArray.o halfSampleMode.o
+	$(COMPILER) sicTestCase.c sic.o linearfit.o circularOrderedArray.o halfSampleMode.o -o sicTestCase
 
 
 microtime.o: microtime.h microtime.c
@@ -50,8 +55,9 @@ update: linearfit.h linearfit.c circularOrderedArray.h circularOrderedArray.c si
 compile: client server
 
 
-runtests: circularOrderedArrayTestCase linearfitTestCase sicTestCase
+runtests: circularOrderedArrayTestCase halfSampleModeTestCase linearfitTestCase sicTestCase
 	./circularOrderedArrayTestCase
+	./halfSampleModeTestCase
 	./linearfitTestCase
 	./sicTestCase
 
