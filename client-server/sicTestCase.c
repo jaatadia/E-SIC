@@ -25,7 +25,7 @@ void assertInMargin(char* testName, int64_t actual, int64_t expected, int margin
 	
 	if(difference < margin){
 		successTests++;
-		printf("Test: %s. \033[0;32mSUCCESS\033[39;49m\n", testName);	
+		printf("Test: %s. \033[0;32mSUCCESS\033[39;49m Difference: %d\n", testName, difference);	
 	} else {
 		failedTests ++;	
 		printf("Test: %s. \033[1;31mFAIL\033[39;49m. Expected: %ld Actual: %ld Difference: %ld\n", testName, expected, actual, difference);	
@@ -320,6 +320,8 @@ void fileTest(){
 	int64_t tS_A = sicTime(&sicA, 2144256047); // 2144274979 tt_Time: 1602777365723646 // TicTocDaemon 2142
 	int64_t tS_B = sicTime(&sicB, 2144301196); // 2144301196 tt_Time: 1602777365228340 // TicTocDaemon 2142
 
+	assertInMargin("fileTest: timeServer A - ESP ttc", tS_A, 1602777365723646, 100);
+	assertInMargin("fileTest: timeServer B - ESP ttc", tS_B, 1602777365228340, 100);
 	assertInMargin("fileTest: timeServer A B ", tS_A, tS_B, 100);
     
 }
