@@ -8,7 +8,9 @@ void updateRoundTripTime(SicData* sic, int64_t rtt);
 int64_t min(int64_t* array, int start, int size, int maxSize);
 int rttChangeDectected(SicData* sic);
 
+void calculateLinearFit(SicData* sic, LinearFitResult* result);
 int64_t getPhi(void * array, int pos);
+double getPhiDouble(void * array, int pos);
 double getTime(void * array, int pos);
 
 void sicReset(SicData* sic){
@@ -54,9 +56,6 @@ void sicStep(SicData* sic, int64_t t1, int64_t t2, int64_t t3, int64_t t4) {
 	insertOrderedWithTime(&sic->Wm, t4 - t3 - (t2 - t1 + t4 - t3) / 2.0, t4);
 	// Wm <- t1 - t2 + (t2 - t1 + t4 - t3) / 2.0 
 	sic->syncSteps++;
-	if(sic->state == PRE_SYNC || sic->state == SYNC || sic->syncSteps >= SAMPLES_SIZE){
-		insertPoint(&sic->Wmode, t4, halfSampleMode(&sic->Wm, 0, SAMPLES_SIZE, getPhi));
-	}
 
 	/* updateRoundTripTime(sic, t4 - t1);
 	if (!rttRoutePreserved(sic)) {
@@ -65,7 +64,8 @@ void sicStep(SicData* sic, int64_t t1, int64_t t2, int64_t t3, int64_t t4) {
 
 	if ((sic->state == PRE_SYNC || sic->state == SYNC) && sic->syncSteps == P) {
 		LinearFitResult result;
-		linearFitResult(&sic->Wmode, &result);
+		calculateLinearFit(sic, &result);
+
 		sic->state = SYNC;
 		sic->syncSteps = 0;
 		sic->actual_m = (1 - ALPHA) * result.m + ALPHA * sic->actual_m;
@@ -75,7 +75,8 @@ void sicStep(SicData* sic, int64_t t1, int64_t t2, int64_t t3, int64_t t4) {
 		#endif
 	} else if((sic->state == NO_SYNC || sic->state == RE_SYNC) && sic->syncSteps == P + SAMPLES_SIZE) {
 		LinearFitResult result;
-		linearFitResult(&sic->Wmode, &result);
+		calculateLinearFit(sic, &result);
+
 		sic->state = PRE_SYNC;
 		sic->syncSteps = 0;
 		sic->actual_m = result.m;
@@ -86,8 +87,22 @@ void sicStep(SicData* sic, int64_t t1, int64_t t2, int64_t t3, int64_t t4) {
 	} 
 }
 
+void calculateLinearFit(SicData* sic, LinearFitResult* result){
+	int modePosition = halfSampleModePosition(&sic->Wm, 0, SAMPLES_SIZE, getPhi);
+	int start = modePosition - SIC_LINEAR_FIT_WINDOW;
+	int end = modePosition + SIC_LINEAR_FIT_WINDOW;
+	if(start < 0) start = 0;
+	if(end > SAMPLES_SIZE) end = SAMPLES_SIZE;
+	linearFitFunction(&sic->Wm, start, end, getTime, getPhiDouble, result);
+}
+
+
 int64_t getPhi(void * array, int pos){
 	return ((CircularOrderedArray*) array)->array[pos].value;
+}
+
+double getPhiDouble(void * array, int pos){
+	return getPhi(array, pos);
 }
 
 double getTime(void * array, int pos){

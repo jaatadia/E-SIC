@@ -63,3 +63,37 @@ int64_t halfSampleMode(void* array, int start, int end, int64_t(*fx)(void*, int)
 
 	return mode;
 }
+
+int halfSampleModePosition(void* array, int start, int end, int64_t(*fx)(void*, int)){
+
+	if((end - start) <= 2) return start;
+
+	int64_t mode = halfSampleMode(array, start, end, fx);
+	
+	int firstMatch = -1;
+	int lastMatch = -1;
+
+	for(int i = start; i< end-1; i++){
+		int64_t current = (*fx)(array, i);
+		int64_t next = (*fx)(array, i+1);
+		if(current == mode){
+			lastMatch = i;
+			if(firstMatch == -1) {
+				firstMatch = i;
+			}
+			if(next>mode){
+				return (lastMatch + firstMatch) / 2;
+			}
+		} else if(next > mode) {
+			return i;
+		}
+	}
+
+	if((*fx)(array, end-1) == mode) {
+		lastMatch = end-1;
+		return (lastMatch + firstMatch) / 2;
+	}
+
+	//we should never arrive here since the mode will never be in the las position of the ordered array 
+	return mode;
+}
