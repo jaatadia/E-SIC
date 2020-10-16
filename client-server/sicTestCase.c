@@ -12,12 +12,24 @@ void assert(char* testName, int actual, int expected) {
 	
 	if(condition){
 		successTests++;
-		printf("Test: %s. SUCCESS\n", testName);	
+		printf("Test: %s. \033[0;32mSUCCESS\033[39;49m\n", testName);	
 	} else {
 		failedTests ++;	
-		printf("Test: %s. FAIL. Expected: %d Actual: %d\n", testName, expected, actual);	
-	}
+		printf("Test: %s. \033[1;31mFAIL\033[39;49m. Expected: %d Actual: %d\n", testName, expected, actual);	
+	}	
+}
+
+void assertInMargin(char* testName, int64_t actual, int64_t expected, int margin) {
+	int64_t difference = (expected - actual);
+	difference = (difference < 0) ? -difference : difference;
 	
+	if(difference < margin){
+		successTests++;
+		printf("Test: %s. \033[0;32mSUCCESS\033[39;49m\n", testName);	
+	} else {
+		failedTests ++;	
+		printf("Test: %s. \033[1;31mFAIL\033[39;49m. Expected: %ld Actual: %ld Difference: %ld\n", testName, expected, actual, difference);	
+	}	
 }
 
 int randUpTo(int max) {
@@ -100,11 +112,7 @@ void syncServerDifFrequency() {
 	int64_t tS = timeSinceStart + serverTime;
 	int64_t tS_A = sicTime(&sicA, f_multiplier * timeSinceStart + startTimeA);
 	
-	printf("frequency:\n");
-	printf("time ServerA: %ld.\n", tS);
-	printf("Server Time Acording to NodeA: %ld. Diff to RealServer: %ld.\n", tS_A, tS - tS_A);
-	
-	assert("Parallel: A in error margin", true, ((tS - tS_A) < 100) && ((tS - tS_A) > -100));
+	assertInMargin("syncServerDifFrequency", tS_A, tS, 100);
 }
 
 
@@ -146,8 +154,8 @@ void parallel() {
 	printf("Server Time Acording to NodeA: %ld. Diff to RealServer: %ld.\n", tS_A, tS - tS_A);
 	printf("Server Time Acording to NodeB: %ld. Diff to RealServer: %ld.\n", tS_B, tS - tS_B);
 	
-	assert("Parallel: A in error margin", true, ((tS - tS_A) < 100) && ((tS - tS_A) > -100));
-	assert("Parallel: B in error margin", true, ((tS - tS_B) < 100) && ((tS - tS_B) > -100));
+	assertInMargin("Parallel: server time A", tS_A, tS, 100);
+	assertInMargin("Parallel: server time B", tS_B, tS, 100);
 }
 
 void parallelSimulatedVariations() {
@@ -201,8 +209,8 @@ void parallelSimulatedVariations() {
 	printf("Server Time Acording to NodeA: %ld. Diff to RealServer: %ld.\n", tS_A, tS - tS_A);
 	printf("Server Time Acording to NodeB: %ld. Diff to RealServer: %ld.\n", tS_B, tS - tS_B);
 	
-	assert("Parallel Variations: A in error margin", true, ((tS - tS_A) < 100) && ((tS - tS_A) > -100));
-	assert("Parallel Variations: B in error margin", true, ((tS - tS_B) < 100) && ((tS - tS_B) > -100));
+	assertInMargin("Parallel Variations: server time A", tS_A, tS, 100);
+	assertInMargin("Parallel Variations: server time B", tS_B, tS, 100);
 }
 
 
@@ -312,8 +320,7 @@ void fileTest(){
 	int64_t tS_A = sicTime(&sicA, 2144256047); // 2144274979 tt_Time: 1602777365723646 // TicTocDaemon 2142
 	int64_t tS_B = sicTime(&sicB, 2144301196); // 2144301196 tt_Time: 1602777365228340 // TicTocDaemon 2142
 
-	printf("Server Time Acording to NodeA: %ld. Server Acroding to NodeB: %ld. Diff: %ld.\n", tS_A, tS_B, tS_A - tS_B);
-	assert("fileTest: A B diff margin", true, ((tS_A - tS_B) < 100) && ((tS_A - tS_B) > -100));
+	assertInMargin("fileTest: timeServer A B ", tS_A, tS_B, 100);
     
 }
 

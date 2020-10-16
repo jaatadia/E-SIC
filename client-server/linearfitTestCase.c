@@ -9,14 +9,13 @@ void assert(char* testName, int actual, int expected) {
 	
 	if(condition){
 		successTests++;
-		printf("Test: %s. SUCCESS\n", testName);	
+		printf("Test: %s. \033[0;32mSUCCESS\033[39;49m\n", testName);	
 	} else {
 		failedTests ++;	
-		printf("Test: %s. FAIL. Expected: %d Actual: %d\n", testName, expected, actual);	
+		printf("Test: %s. \033[1;31mFAIL\033[39;49m. Expected: %d Actual: %d\n", testName, expected, actual);	
 	}
 	
 }
-
 
 void correctLinearFit(){
 

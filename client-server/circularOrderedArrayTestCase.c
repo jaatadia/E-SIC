@@ -9,10 +9,10 @@ void assert(char* testName, int actual, int expected) {
 	
 	if(condition){
 		successTests++;
-		printf("Test: %s. SUCCESS\n", testName);	
+		printf("Test: %s. \033[0;32mSUCCESS\033[39;49m\n", testName);	
 	} else {
 		failedTests ++;	
-		printf("Test: %s. FAIL. Expected: %d Actual: %d\n", testName, expected, actual);	
+		printf("Test: %s. \033[1;31mFAIL\033[39;49m. Expected: %d Actual: %d\n", testName, expected, actual);	
 	}
 	
 }
@@ -33,19 +33,19 @@ void assertPositions(char* testName, Node * arrayActual, int64_t(*fn)(Node*), in
 	for (int i = 0; i < size; i++){
 		int64_t actual = (*fn)(&arrayActual[i]);
 		if(actual == arrayExpected[i]){
-			printf(" %ld✓", actual);	
+			printf(" \033[0;32m%ld✓\033[39;49m", actual);	
 		} else {
 			fail = 1;
-			printf(" %ld!=%ld", actual, arrayExpected[i]);	
+			printf(" \033[1;31m%ld!=%ld\033[39;49m", actual, arrayExpected[i]);	
 		}
 	}
 
 	if(!fail){
 		successTests++;
-		printf(" SUCCESS\n");	
+		printf(" \033[0;32mSUCCESS\033[39;49m\n");	
 	} else {
 		failedTests ++;	
-		printf(" FAIL\n");	
+		printf(" \033[1;31mFAIL\033[39;49m\n");	
 	}
 
 }
