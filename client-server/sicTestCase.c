@@ -2,36 +2,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <inttypes.h>
+#include "cunit.h"
 
-int successTests = 0;
-int failedTests = 0;
-int true = 1;
 int seed = 1111;
-
-void assert(char* testName, int actual, int expected) {
-	int condition = expected == actual;
-	
-	if(condition){
-		successTests++;
-		printf("Test: %s. \033[0;32mSUCCESS\033[39;49m\n", testName);	
-	} else {
-		failedTests ++;	
-		printf("Test: %s. \033[1;31mFAIL\033[39;49m. Expected: %d Actual: %d\n", testName, expected, actual);	
-	}	
-}
-
-void assertInMargin(char* testName, int64_t actual, int64_t expected, int margin) {
-	int64_t difference = (expected - actual);
-	difference = (difference < 0) ? -difference : difference;
-	
-	if(difference < margin){
-		successTests++;
-		printf("Test: %s. \033[0;32mSUCCESS\033[39;49m Difference: %"PRId64"\n", testName, difference);	
-	} else {
-		failedTests ++;	
-		printf("Test: %s. \033[1;31mFAIL\033[39;49m. Expected: %"PRId64" Actual: %"PRId64" Difference: %"PRId64"\n", testName, expected, actual, difference);	
-	}	
-}
 
 int randUpTo(int max) {
 	return rand() % max;
@@ -389,22 +362,19 @@ void fileTest(){
 
 int main(int argc, char** argv){
 	srand(seed);
-/*
+
 	syncStatesTestCase();
 	syncNoDifferenceInClocks();
 	syncServerInFuture();
 	syncServerInPast();
 	parallel();
 	parallelSimulatedVariations();
-	syncServerDifFrequency();*/
-	fileTest();
+	syncServerDifFrequency();
+	//fileTest();
 
 	//free resources
 	if(groups) free(groups);
 	if(groups) free(igroups);
 
-	//TODO extract testing logic to its own module
-	printf("\n-------------------------------------------------------\n");
-	printf("Run: %d, Succesful: %d, Fail: %d.\n", failedTests + successTests, successTests, failedTests);
-	return 0;
+	return reportResults();
 }

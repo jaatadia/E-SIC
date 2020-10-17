@@ -1,21 +1,6 @@
 #include "linearfit.h"
+#include "cunit.h"
 #include <stdio.h>
-
-int successTests = 0;
-int failedTests = 0;
-
-void assert(char* testName, int actual, int expected) {
-	int condition = expected == actual;
-	
-	if(condition){
-		successTests++;
-		printf("Test: %s. \033[0;32mSUCCESS\033[39;49m\n", testName);	
-	} else {
-		failedTests ++;	
-		printf("Test: %s. \033[1;31mFAIL\033[39;49m. Expected: %d Actual: %d\n", testName, expected, actual);	
-	}
-	
-}
 
 void correctLinearFit(){
 
@@ -75,8 +60,5 @@ int main(int argc, char** argv){
 	correctLinearFit();
 	linearfitHorizontal();
 	
-	printf("\n-------------------------------------------------------\n");
-	printf("Run: %d, Succesful: %d, Fail: %d.\n", failedTests + successTests, successTests, failedTests);
-	return 0;
-
+	return reportResults();
 }
