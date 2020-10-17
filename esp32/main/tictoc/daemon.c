@@ -70,7 +70,7 @@ void getTimeStamps(void * parameter){
 			sendto(ticTocData->sock, (const int32_t *)timestamps, outGoingSize,  0, (const struct sockaddr *) &servaddr, servaddrSize);
 
 			if(recv(ticTocData->sock, (int32_t *)timestamps, incomingSize, MSG_WAITALL) == incomingSize){
-				resultArray[3]=epochInMicros();
+				resultArray[3]=esp_timer_get_time();
 				for(int i = 0; i<3; i++) {
 					resultArray[i]=decodeEpochInMicros(timestamps,2*i);
 				}
