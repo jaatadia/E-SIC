@@ -8,8 +8,7 @@
 
 //With the new implementation, indicate where to start and stop 
 #define SAMPLES_SIZE CIRCULAR_ORDERED_ARRAY_MAX_SIZE
-#define SIC_START_POS CIRCULAR_ORDERED_ARRAY_MAX_SIZE/2 - 30
-#define SIC_END_POS CIRCULAR_ORDERED_ARRAY_MAX_SIZE/2 + 30
+#define SIC_LINEAR_FIT_WINDOW 30
 
 #define P 60
 #define ALPHA 0.05
@@ -28,6 +27,7 @@ struct SicData {
     int to;
 
     CircularOrderedArray Wm;
+    CircularLinearFitArray Wmode;
 
     int rttNextPos;
 	int rttSize;

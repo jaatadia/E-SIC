@@ -1,6 +1,7 @@
 #include "sic.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include <inttypes.h>
 
 int successTests = 0;
 int failedTests = 0;
@@ -25,10 +26,10 @@ void assertInMargin(char* testName, int64_t actual, int64_t expected, int margin
 	
 	if(difference < margin){
 		successTests++;
-		printf("Test: %s. \033[0;32mSUCCESS\033[39;49m Difference: %d\n", testName, difference);	
+		printf("Test: %s. \033[0;32mSUCCESS\033[39;49m Difference: %"PRId64"\n", testName, difference);	
 	} else {
 		failedTests ++;	
-		printf("Test: %s. \033[1;31mFAIL\033[39;49m. Expected: %ld Actual: %ld Difference: %ld\n", testName, expected, actual, difference);	
+		printf("Test: %s. \033[1;31mFAIL\033[39;49m. Expected: %"PRId64" Actual: %"PRId64" Difference: %"PRId64"\n", testName, expected, actual, difference);	
 	}	
 }
 
@@ -253,47 +254,80 @@ void syncServerInPast() {
 	assert("Synced algorithm server in past", sicTime(&sic, 1000000), 0);
 }
 
+/** input file parsing **/
 struct ParsedT {
+	int type;
 	int64_t t[4];
 };
 
 typedef struct ParsedT ParsedT;
 
 #include <regex.h> 
-size_t ngroups = 0;
+int TIC_TOC_LINE = 0;
+int INTERRUPTION_LINE = 1;
+
 int regInit = 0; 
-regmatch_t *groups = 0;
+
 regex_t reg; 
+int ngroups;
+regmatch_t *groups;
+
+regex_t ireg; 
+int ingroups;
+regmatch_t *igroups;
+
+void initRegex(){
+	regInit = 1; 
+
+	if(regcomp(&reg, "^.*t1:([0-9]+) t2:([0-9]+) t3:([0-9]+) t4:([0-9]+).*$", REG_EXTENDED)!=0) exit(-10); 
+	ngroups = reg.re_nsub + 1;
+	groups = malloc(ngroups * sizeof(regmatch_t));
+	
+	if(regcomp(&ireg, "^.*tt_Time: ([0-9]+), ttTime_input: ([0-9]+) .*$", REG_EXTENDED)!=0) exit(-11); 
+	ingroups = ireg.re_nsub + 1;
+	igroups = malloc(ngroups * sizeof(regmatch_t));
+}
+
+int64_t parseNumber(char* string, int start, int end){
+	int64_t result = 0;
+	for(int j = start; j< end; j++) {
+		result *= 10;
+		result += string[j] - '0';
+	}
+	return result;
+}
 
 void parseLine(ParsedT * parsed, char* line){
-	if (regInit==0){
-		if(regcomp(&reg, "^.*t1:([0-9]+) t2:([0-9]+) t3:([0-9]+) t4:([0-9]+).*$", REG_EXTENDED)!=0) exit(-10); 
-		ngroups = reg.re_nsub + 1;
-		groups = malloc(ngroups * sizeof(regmatch_t));
-		regInit = 1; 
-	}
-
+	if (regInit==0) initRegex();
 	if(regexec(&reg, line, ngroups, groups, 0) == REG_NOMATCH){
-		printf("line not matched: %s\n", line);
-		exit(-11);
-	};
+		
+		if(regexec(&ireg, line, ingroups, igroups, 0) == REG_NOMATCH){
+			printf("line not matched: %s\n", line);
+			exit(-11);
+		}
+		
+		parsed->type=INTERRUPTION_LINE;
+		parsed->t[0] = parseNumber(line, igroups[2].rm_so, igroups[2].rm_eo);
+		parsed->t[1] = parseNumber(line, igroups[1].rm_so, igroups[1].rm_eo);
+	} else {
 
-
-
-	for(int i = 0; i<4;i++){
-		parsed->t[i]=0;
-		for(int j = groups[i+1].rm_so; j< groups[i+1].rm_eo; j++) {
-			parsed->t[i] *= 10;
-			parsed->t[i] += line[j] - '0';
+		parsed->type=TIC_TOC_LINE;
+		for(int i = 0; i<4;i++){
+			parsed->t[i] = parseNumber(line, groups[i+1].rm_so, groups[i+1].rm_eo);
 		}
 	}
 }
+
+/** en input file parsing **/
 	
-void loadValues(SicData* sic, char* file){
+void loadValues(SicData* sic, char* file, int64_t* estimations, int64_t* size){
 	FILE * fp;
     char * line = NULL;
     size_t len = 0;
     ssize_t read;
+
+    int assertionNumber = 0;
+    (*size) = 0;
 
 	ParsedT parsed;
 
@@ -301,8 +335,22 @@ void loadValues(SicData* sic, char* file){
     while ((read = getline(&line, &len, fp)) != -1) {
         //printf("line: %s", line);
         parseLine(&parsed, line);
-		//printf("t1:%ld t2:%ld t3:%ld t4:%ld\n", parsed.t[0], parsed.t[1], parsed.t[2], parsed.t[3]);
-		sicStep(sic, parsed.t[0], parsed.t[1], parsed.t[2], parsed.t[3]);
+		
+		if(parsed.type == TIC_TOC_LINE){
+			//printf("t1:%ld t2:%ld t3:%ld t4:%ld\n", parsed.t[0], parsed.t[1], parsed.t[2], parsed.t[3]);
+			sicStep(sic, parsed.t[0], parsed.t[1], parsed.t[2], parsed.t[3]);	
+		} else {
+			//printf("tt_input:%ld tt:%ld \n", parsed.t[0], parsed.t[1]);
+			if(parsed.t[1] != 0) {
+				if(assertionNumber >0){
+					assertInMargin("training assertion", sicTime(sic, parsed.t[0]), parsed.t[1], 100);
+					estimations[(*size)] = parsed.t[1];
+					(*size) ++;
+				}
+				assertionNumber ++;
+			}
+		}
+
     }
 	fclose(fp);
 	free(line);
@@ -314,32 +362,46 @@ void fileTest(){
 	sicInit(&sicA);
 	sicInit(&sicB);
 
-	loadValues(&sicA, "./ESP1_tx.txt");
-	loadValues(&sicB, "./ESP2_tx.txt");
+	
+	int64_t sizeEstimationsNodeA;
+	int64_t estimationsNodeA[200];
 
-	int64_t tS_A = sicTime(&sicA, 2144256047); // 2144274979 tt_Time: 1602777365723646 // TicTocDaemon 2142
-	int64_t tS_B = sicTime(&sicB, 2144301196); // 2144301196 tt_Time: 1602777365228340 // TicTocDaemon 2142
+	int64_t sizeEstimationsNodeB;
+	int64_t estimationsNodeB[200];
 
-	assertInMargin("fileTest: timeServer A - ESP ttc", tS_A, 1602777365723646, 100);
-	assertInMargin("fileTest: timeServer B - ESP ttc", tS_B, 1602777365228340, 100);
-	assertInMargin("fileTest: timeServer A B ", tS_A, tS_B, 100);
+
+	loadValues(&sicA, "./ESP1_tx.txt", estimationsNodeA, &sizeEstimationsNodeA);
+	loadValues(&sicB, "./ESP2_tx.txt", estimationsNodeB, &sizeEstimationsNodeB);
+
+	int64_t tS_A = sicTime(&sicA, 1218261743); // EXT_IRQ tt_Time: 1602927736615103, ttTime_input: 1218261743 Ciclos con esp_get_time(): 1861 
+	int64_t tS_B = sicTime(&sicB, 1218264868); // EXT_IRQ tt_Time: 1602927736615362, ttTime_input: 1218264868 Ciclos con esp_get_time(): 1859 
+
+	int64_t maxDif = 0;
+	for(int i = 0; i<sizeEstimationsNodeA && i < sizeEstimationsNodeB; i++) {
+		assertInMargin("fileTest: timeServer A B ", estimationsNodeA[i], estimationsNodeB[i], 100);	
+		int64_t dif = estimationsNodeA[i] - estimationsNodeB[i];
+		dif = (dif < 0) ? - dif : dif;
+		maxDif = (dif > maxDif) ? dif : maxDif;
+	}
+	printf("MaxDif: %ld\n", maxDif);
     
 }
 
 int main(int argc, char** argv){
 	srand(seed);
-
+/*
 	syncStatesTestCase();
 	syncNoDifferenceInClocks();
 	syncServerInFuture();
 	syncServerInPast();
 	parallel();
 	parallelSimulatedVariations();
-	syncServerDifFrequency();
+	syncServerDifFrequency();*/
 	fileTest();
 
 	//free resources
 	if(groups) free(groups);
+	if(groups) free(igroups);
 
 	//TODO extract testing logic to its own module
 	printf("\n-------------------------------------------------------\n");
