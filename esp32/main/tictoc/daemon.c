@@ -75,10 +75,13 @@ void getTimeStamps(void * parameter){
 					resultArray[i]=decodeEpochInMicros(timestamps,2*i);
 				}
 
-				#ifdef TICTOC_DAEMON_DEBUG
-				printf("TicTocDaemon %lld - t1:%"PRId64" t2:%"PRId64" t3:%"PRId64" t4:%"PRId64"\n", loopCount, resultArray[0], resultArray[1], resultArray[2], resultArray[3]);
-				#endif
-				sicStep(&ticTocData->sicdata, resultArray[0], resultArray[1], resultArray[2], resultArray[3]);
+				if (loopCount > 10) {
+					#ifdef TICTOC_DAEMON_DEBUG
+					printf("TicTocDaemon %lld - t1:%"PRId64" t2:%"PRId64" t3:%"PRId64" t4:%"PRId64"\n", loopCount, resultArray[0], resultArray[1], resultArray[2], resultArray[3]);
+					#endif
+					sicStep(&ticTocData->sicdata, resultArray[0], resultArray[1], resultArray[2], resultArray[3]);	
+				}
+				
 			} else {
 				#ifdef TICTOC_DAEMON_DEBUG
 				printf("TicTocDaemon timeout\n");
