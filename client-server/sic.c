@@ -53,7 +53,8 @@ void sicStepTimeout(SicData* sic){
 
 void sicStep(SicData* sic, int64_t t1, int64_t t2, int64_t t3, int64_t t4) {
 	sic->to=0;
-	insertOrderedWithTime(&sic->Wm, t4 - t3 - (t2 - t1 + t4 - t3) / 2.0, t4);
+	int64_t phi = t4 - t3 - (t2 - t1 + t4 - t3) / 2.0;
+	insertOrderedWithTime(&sic->Wm, phi, t3 + phi);
 	// Wm <- t1 - t2 + (t2 - t1 + t4 - t3) / 2.0 
 	sic->syncSteps++;
 
