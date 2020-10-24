@@ -366,15 +366,14 @@ void fileTest(){
 int main(int argc, char** argv){
 	srand(seed);
 
-/*
 	syncStatesTestCase();
 	syncNoDifferenceInClocks();
 	syncServerInFuture();
 	syncServerInPast();
 	parallel();
 	parallelSimulatedVariations();
-	syncServerDifFrequency();*/
-	fileTest();
+	syncServerDifFrequency();
+	//fileTest();
 
 	//free resources
 	if(groups) free(groups);

@@ -5,6 +5,32 @@
 
 //#define HSM_DEBUG
 
+int halfSampleStep(int N, void* array, int start, int end, int64_t(*fx)(void*, int)){
+	#ifdef HSM_DEBUG
+	printf("HalfSampleMode - start: %d, end: %d, N: %d.\n", start, end, N);
+	#endif	
+	
+	int j = -1;
+	int64_t wmin = (*fx)(array, end-1) - (*fx)(array, start);
+
+	for(int i = start; i < end - (N-1); i++) {
+
+		int64_t w = (*fx)(array, i + (N-1)) - (*fx)(array, i);
+		if(w <= wmin) {
+			wmin = w;
+			j = i;
+		}
+
+		#ifdef HSM_DEBUG
+		int64_t xi = (*fx)(array, i);
+		int64_t xin = (*fx)(array, i + (N-1));
+		printf("HalfSampleMode - i: %d, Xi: %ld, XiN-1: %ld, w: %ld.\n", i, xi, xin, w);
+		#endif	
+	}
+	return j;
+}
+
+
 int64_t innerHalfSampleMode(void* array, int start, int end, int64_t(*fx)(void*, int)){
 	int size = end - start;
 	if(size == 1) {
@@ -24,18 +50,8 @@ int64_t innerHalfSampleMode(void* array, int start, int end, int64_t(*fx)(void*,
 		return (x2 - x1 < x3 - x2) ? (x1 + x2)/2 : (x2 + x3)/2;
 	}
 
-
-	int j = -1;
 	int N = (size % 2 == 0) ? (size/2) : (size/2 + 1);
-	int64_t wmin = (*fx)(array, end-1) - (*fx)(array, start);
-
-	for(int i = start; i < end - N; i++) {
-		int64_t w = (*fx)(array, start + (N-1)) - (*fx)(array, i);
-		if(w <= wmin) {
-			wmin = w;
-			j = i;
-		}
-	}
+	int j = halfSampleStep(N, array, start, end, fx);
 
 	#ifdef HSM_DEBUG
 	printf("HalfSampleMode - j: %d N: %d.\n", j, N);
@@ -96,4 +112,22 @@ int halfSampleModePosition(void* array, int start, int end, int64_t(*fx)(void*, 
 
 	//we should never arrive here since the mode will never be in the las position of the ordered array 
 	return mode;
+}
+
+int halfSampleModeWindowedMedianPosition(int* slidingWindows, int slidingWindowsSize, void* array, int start, int end, int64_t(*fx)(void*, int)) {
+	int medianPosition = (start + end)/2;
+	int stepStart = start;
+	int stepEnd = end;
+	for(int i = 0; i < slidingWindowsSize; i++){
+		int j = halfSampleStep(slidingWindows[i], array, stepStart, stepEnd, fx);
+		stepStart = j;
+		stepEnd = j + slidingWindows[i];
+		medianPosition = j + slidingWindows[i]/2;
+
+		#ifdef HSM_DEBUG
+		printf("HalfSampleMode - j: %d N: %d medianPosition: %d.\n", j, slidingWindows[i], medianPosition);
+		#endif	
+
+	}
+	return medianPosition;
 }

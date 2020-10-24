@@ -54,16 +54,25 @@ void mode4Samples(){
 	assert("Mode 4 equal samples position", halfSampleModePosition(array, 0, size, getValue), 1);
 
 	int64_t array2[] = {1, 2, 3, 4};
-	assert("Mode 4 different consecutive samples", halfSampleMode(array2, 0, size, getValue), 2);
-	assert("Mode 4 different consecutive samples position", halfSampleModePosition(array2, 0, size, getValue),1);
+	assert("Mode 4 different consecutive samples", halfSampleMode(array2, 0, size, getValue), 3);
+	assert("Mode 4 different consecutive samples position", halfSampleModePosition(array2, 0, size, getValue), 2);
 
 	int64_t array3[] = {1, 2, 4, 4};
-	assert("Mode 4 samples mode to the right", halfSampleMode(array3, 0, size, getValue), 3);
-	assert("Mode 4 samples mode to the right position", halfSampleModePosition(array3, 0, size, getValue), 1);
+	assert("Mode 4 samples mode to the right", halfSampleMode(array3, 0, size, getValue), 4);
+	assert("Mode 4 samples mode to the right position", halfSampleModePosition(array3, 0, size, getValue), 2);
 
 	int64_t array4[] = {1, 1, 2, 3};
 	assert("Mode 4 samples mode to the left", halfSampleMode(array4, 0, size, getValue), 1);
 	assert("Mode 4 samples mode to the left position", halfSampleModePosition(array4, 0, size, getValue), 0);
+}
+
+void windowedMedianPosition(){
+	int windowsSize = 2;
+	int windows[] = {6, 3};
+	
+	int size = 9;
+	int64_t array[] = {1, 2, 3, 4, 8, 10, 12, 13, 22};
+	assert("Mode 4 equal samples", halfSampleModeWindowedMedianPosition(windows, windowsSize, array, 0, size, getValue), 2);
 }
 
 int main(int argc, char** argv){
@@ -71,6 +80,8 @@ int main(int argc, char** argv){
 	mode2Samples();
 	mode3Samples();
 	mode4Samples();
+
+	windowedMedianPosition();
 	
 	return reportResults();
 }
