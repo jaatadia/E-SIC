@@ -348,7 +348,7 @@ void fileTest(){
 
 	printf("\n---------loading1---------.\n");
 	loadValues(&sicA, "./ESP1.txt", estimationsNodeA, &sizeEstimationsNodeA);
-/*
+
 	printf("\n---------loading2---------.\n");
 	loadValues(&sicB, "./ESP2.txt", estimationsNodeB, &sizeEstimationsNodeB);
 
@@ -360,11 +360,12 @@ void fileTest(){
 		maxDif = (dif > maxDif) ? dif : maxDif;
 	}
 	printf("MaxDif: %ld\n", maxDif);
-  */  
+    
 }
 
 int main(int argc, char** argv){
 	srand(seed);
+
 
 	syncStatesTestCase();
 	syncNoDifferenceInClocks();

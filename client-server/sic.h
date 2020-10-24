@@ -29,12 +29,6 @@ struct SicData {
     CircularOrderedArray Wm;
     CircularLinearFitArray Wmode;
 
-    int rttNextPos;
-	int rttSize;
-    int64_t Wrtt[2 * RTT_SIZE];
-    int64_t rttFirst;
-    int64_t rttLast;
-
     double actual_m;
     double actual_c;
 };

@@ -1,13 +1,13 @@
 #include "sic.h"
 #include "halfSampleMode.h"
+#include <stdio.h>
 
-//#define TICTOC_SIC_DEBUG
+#define TICTOC_SIC_DEBUG
 
-void updateMedians(SicData* sic, double phiEstimate);
-void updateRoundTripTime(SicData* sic, int64_t rtt);
-int64_t min(int64_t* array, int start, int size, int maxSize);
-int rttChangeDectected(SicData* sic);
+int SAMPLE_WINDOWS_SIZE = 3;
+int SAMPLE_WINDOWS[] = {300, 150, 75};
 
+void updateSamples(SicData* sic, int64_t phi, int64_t t);
 void calculateLinearFit(SicData* sic, LinearFitResult* result);
 int64_t getPhi(void * array, int pos);
 double getPhiDouble(void * array, int pos);
@@ -15,14 +15,8 @@ double getTime(void * array, int pos);
 
 void sicReset(SicData* sic){
 	sic->syncSteps = 0;
-	
 	initCircularOrderedArray(&sic->Wm);
 	initCircularLinearFitArray(&sic->Wmode);
-
-    sic->rttNextPos = 0;
-    sic->rttSize = 0;
-    sic->rttFirst = 0;
-    sic->rttLast = 0;
 }
 
 
@@ -53,15 +47,13 @@ void sicStepTimeout(SicData* sic){
 
 void sicStep(SicData* sic, int64_t t1, int64_t t2, int64_t t3, int64_t t4) {
 	sic->to=0;
+	
 	int64_t phi = t4 - t3 - (t2 - t1 + t4 - t3) / 2.0;
-	insertOrderedWithTime(&sic->Wm, phi, t3 + phi);
-	// Wm <- t1 - t2 + (t2 - t1 + t4 - t3) / 2.0 
-	sic->syncSteps++;
+	int64_t t = t3 + phi;
 
-	/* updateRoundTripTime(sic, t4 - t1);
-	if (!rttRoutePreserved(sic)) {
-		sicInit(sic);
-	} */
+	updateSamples(sic, phi, t);
+	
+	sic->syncSteps++;
 
 	if ((sic->state == PRE_SYNC || sic->state == SYNC) && sic->syncSteps == P) {
 		LinearFitResult result;
@@ -88,13 +80,42 @@ void sicStep(SicData* sic, int64_t t1, int64_t t2, int64_t t3, int64_t t4) {
 	} 
 }
 
+void updateSamples(SicData* sic, int64_t phi, int64_t t){	
+	insertOrderedWithTime(&sic->Wm, phi, t);
+
+	
+	if(sic->state == PRE_SYNC || sic->state == SYNC || sic->syncSteps >= SAMPLES_SIZE){
+		int windowsSize = 3;
+		int windows[] = {300, 150, 75};
+		int modePosition = halfSampleModeWindowedMedianPosition(windows, windowsSize, &sic->Wm, 0, SAMPLES_SIZE, getPhi);
+
+		insertPoint(&sic->Wmode, sic->Wm.array[modePosition - 1].time, sic->Wm.array[modePosition - 1].value);
+		insertPoint(&sic->Wmode, sic->Wm.array[modePosition].time, sic->Wm.array[modePosition].value);
+		insertPoint(&sic->Wmode, sic->Wm.array[modePosition + 1].time, sic->Wm.array[modePosition + 1].value);
+	}
+}
+
 void calculateLinearFit(SicData* sic, LinearFitResult* result){
+	/* 
 	int modePosition = halfSampleModePosition(&sic->Wm, 0, SAMPLES_SIZE, getPhi);
 	int start = modePosition - SIC_LINEAR_FIT_WINDOW;
 	int end = modePosition + SIC_LINEAR_FIT_WINDOW;
 	if(start < 0) start = 0;
 	if(end > SAMPLES_SIZE) end = SAMPLES_SIZE;
-	linearFitFunction(&sic->Wm, start, end, getTime, getPhiDouble, result);
+	linearFitFunction(&sic->Wm, start, end, getTime, getPhiDouble, result); 
+	*/
+
+	/*
+	int modePosition = halfSampleModeWindowedMedianPosition(SAMPLE_WINDOWS, SAMPLE_WINDOWS_SIZE, &sic->Wm, 0, SAMPLES_SIZE, getPhi);
+	int start = modePosition - SIC_LINEAR_FIT_WINDOW;
+	int end = modePosition + SIC_LINEAR_FIT_WINDOW;
+	if(start < 0) start = 0;
+	if(end > SAMPLES_SIZE) end = SAMPLES_SIZE;
+	linearFitFunction(&sic->Wm, start, end, getTime, getPhiDouble, result); 
+	*/
+
+	linearFitResult(&sic->Wmode, result);
+
 }
 
 
@@ -110,69 +131,10 @@ double getTime(void * array, int pos){
 	return ((CircularOrderedArray*) array)->array[pos].time;
 }
 
-
-
 int sicTimeAvailable(SicData* sic){
 	return sic->state > NO_SYNC;
 }
 
 int64_t sicTime(SicData* sic, int64_t systemClock){
 	return systemClock - (systemClock*sic->actual_m + sic->actual_c);
-}
-
-
-// TODO optimize and extract this
-void updateRoundTripTime(SicData* sic, int64_t rtt) {
-	if(sic->rttSize == 2 * RTT_SIZE) {
-		sic->Wrtt[sic->rttNextPos] = rtt;
-		sic->rttNextPos = (sic->rttNextPos + 1) % (2 * RTT_SIZE);
-
-		sic->rttFirst = min(sic->Wrtt, 
-			sic->rttNextPos,
-			RTT_SIZE,
-			2 * RTT_SIZE); 
-
-		sic->rttLast = min(sic->Wrtt, 
-			(sic->rttNextPos + RTT_SIZE) % (2 * RTT_SIZE),
-			RTT_SIZE,
-			 2 * RTT_SIZE);
-	} else {
-		sic->Wrtt[sic->rttSize] = rtt;
-		sic->rttSize++;
-
-		sic->rttFirst = min(sic->Wrtt, 
-			0, 
-			sic->rttSize / 2,
-			2 * RTT_SIZE);
-
-		sic->rttLast = min(sic->Wrtt, 
-			sic->rttSize / 2, 
-			sic->rttSize / 2,
-			2 * RTT_SIZE); 
-	}
-}
-
-int64_t min(int64_t* array, int start, int size, int maxSize) {
-	int64_t min = array[start];
-	for (int i = 1; i < size; i ++) {
-		int64_t value = array[(start + i) % maxSize];
-		if(value < min) {
-			min = value;
-		}
-	}
-	return min;
-}
-
-// |rttl - rttf| <= errRTT * min(Wrtt)
-int rttRoutePreserved(SicData* sic) {
-	int64_t smaller;
-	int64_t bigger;
-	if(sic->rttFirst >= sic->rttLast) {
-		smaller = sic->rttLast;
-		bigger = sic->rttFirst;
-	} else {
-		smaller = sic->rttFirst;
-		bigger = sic->rttLast;
-	}
-	return (bigger - smaller) <= errRTT * smaller;
 }

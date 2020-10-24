@@ -2,7 +2,7 @@
 #define LINEAR_FIT_H
 
 #ifndef CICRULAR_LINEAR_FIT_ARRAY_MAX_SIZE
-#define CICRULAR_LINEAR_FIT_ARRAY_MAX_SIZE 600
+#define CICRULAR_LINEAR_FIT_ARRAY_MAX_SIZE (60 * 3)
 #endif
 
 #include <stdint.h>
