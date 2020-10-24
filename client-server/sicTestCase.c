@@ -238,6 +238,7 @@ typedef struct ParsedT ParsedT;
 #include <regex.h> 
 int TIC_TOC_LINE = 0;
 int INTERRUPTION_LINE = 1;
+int TIMEOUT_LINE = 2;
 
 int regInit = 0; 
 
@@ -249,6 +250,8 @@ regex_t ireg;
 int ingroups;
 regmatch_t *igroups;
 
+regex_t toreg; 
+
 void initRegex(){
 	regInit = 1; 
 
@@ -259,6 +262,8 @@ void initRegex(){
 	if(regcomp(&ireg, "^.*tt_Time: ([0-9]+), ttTime_input: ([0-9]+) .*$", REG_EXTENDED)!=0) exit(-11); 
 	ingroups = ireg.re_nsub + 1;
 	igroups = malloc(ngroups * sizeof(regmatch_t));
+
+	if(regcomp(&toreg, "^.*TicTocDaemon timeout.*$", 0)!=0) exit(-12); 
 }
 
 int64_t parseNumber(char* string, int start, int end){
@@ -272,22 +277,20 @@ int64_t parseNumber(char* string, int start, int end){
 
 void parseLine(ParsedT * parsed, char* line){
 	if (regInit==0) initRegex();
-	if(regexec(&reg, line, ngroups, groups, 0) == REG_NOMATCH){
-		
-		if(regexec(&ireg, line, ingroups, igroups, 0) == REG_NOMATCH){
-			printf("line not matched: %s\n", line);
-			exit(-11);
-		}
-		
-		parsed->type=INTERRUPTION_LINE;
-		parsed->t[0] = parseNumber(line, igroups[2].rm_so, igroups[2].rm_eo);
-		parsed->t[1] = parseNumber(line, igroups[1].rm_so, igroups[1].rm_eo);
-	} else {
-
-		parsed->type=TIC_TOC_LINE;
+	if(regexec(&reg, line, ngroups, groups, 0) == 0){
+		parsed->type = TIC_TOC_LINE;
 		for(int i = 0; i<4;i++){
 			parsed->t[i] = parseNumber(line, groups[i+1].rm_so, groups[i+1].rm_eo);
 		}
+	} else if(regexec(&ireg, line, ingroups, igroups, 0) == 0){
+		parsed->type = INTERRUPTION_LINE;
+		parsed->t[0] = parseNumber(line, igroups[2].rm_so, igroups[2].rm_eo);
+		parsed->t[1] = parseNumber(line, igroups[1].rm_so, igroups[1].rm_eo);
+	} else if(regexec(&toreg, line, ingroups, igroups, 0) == 0){
+		parsed->type = TIMEOUT_LINE;
+	} else {
+		printf("line not matched: %s\n", line);
+		exit(-11);
 	}
 }
 
@@ -312,11 +315,11 @@ void loadValues(SicData* sic, char* file, int64_t* estimations, int64_t* size){
 		if(parsed.type == TIC_TOC_LINE){
 			//printf("t1:%ld t2:%ld t3:%ld t4:%ld\n", parsed.t[0], parsed.t[1], parsed.t[2], parsed.t[3]);
 			sicStep(sic, parsed.t[0], parsed.t[1], parsed.t[2], parsed.t[3]);	
-		} else {
+		} else if(parsed.type == INTERRUPTION_LINE){
 			//printf("tt_input:%ld tt:%ld \n", parsed.t[0], parsed.t[1]);
 			if(parsed.t[1] != 0) {
 				if(assertionNumber >0){
-					assertInMargin("training assertion", sicTime(sic, parsed.t[0]), parsed.t[1], 100);
+					assertInMargin("training assertion", parsed.t[1], sicTime(sic, parsed.t[0]), 100);
 					estimations[(*size)] = parsed.t[1];
 					(*size) ++;
 				}
@@ -343,11 +346,11 @@ void fileTest(){
 	int64_t estimationsNodeB[200];
 
 
-	loadValues(&sicA, "./ESP1_tx.txt", estimationsNodeA, &sizeEstimationsNodeA);
-	loadValues(&sicB, "./ESP2_tx.txt", estimationsNodeB, &sizeEstimationsNodeB);
-
-	int64_t tS_A = sicTime(&sicA, 1218261743); // EXT_IRQ tt_Time: 1602927736615103, ttTime_input: 1218261743 Ciclos con esp_get_time(): 1861 
-	int64_t tS_B = sicTime(&sicB, 1218264868); // EXT_IRQ tt_Time: 1602927736615362, ttTime_input: 1218264868 Ciclos con esp_get_time(): 1859 
+	printf("\n---------loading1---------.\n");
+	loadValues(&sicA, "./ESP1.txt", estimationsNodeA, &sizeEstimationsNodeA);
+/*
+	printf("\n---------loading2---------.\n");
+	loadValues(&sicB, "./ESP2.txt", estimationsNodeB, &sizeEstimationsNodeB);
 
 	int64_t maxDif = 0;
 	for(int i = 0; i<sizeEstimationsNodeA && i < sizeEstimationsNodeB; i++) {
@@ -357,20 +360,21 @@ void fileTest(){
 		maxDif = (dif > maxDif) ? dif : maxDif;
 	}
 	printf("MaxDif: %ld\n", maxDif);
-    
+  */  
 }
 
 int main(int argc, char** argv){
 	srand(seed);
 
+/*
 	syncStatesTestCase();
 	syncNoDifferenceInClocks();
 	syncServerInFuture();
 	syncServerInPast();
 	parallel();
 	parallelSimulatedVariations();
-	syncServerDifFrequency();
-	//fileTest();
+	syncServerDifFrequency();*/
+	fileTest();
 
 	//free resources
 	if(groups) free(groups);
