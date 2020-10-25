@@ -63,6 +63,16 @@ void getTimeStamps(void * parameter){
 
 		for(;;) {
 			loopCount++;
+
+			#ifdef TICTOC_DAEMON_DEBUG
+			if(ticTocData->timeRequest != -1) {
+				printf("TicTocDaemon - timeRequested:%"PRId64" tictocTime:%"PRId64".\n",
+						ticTocData->timeRequest,
+						ticTocReady(ticTocData) ? sicTime(&ticTocData->sicdata, ticTocData->timeRequest) : 0);
+				ticTocData->timeRequest = -1;
+			}	
+			#endif
+
 			//printRemainingStack("TicTocDaemon - Start Loop");
 			encodeEpochInMicros(esp_timer_get_time(), timestamps, 0);
 
@@ -96,6 +106,7 @@ void getTimeStamps(void * parameter){
 
 void setupTicToc(TicTocData* ticToc, const char * serverIp, int serverPort)
 {
+	ticToc->timeRequest = -1;
 	sicInit(&ticToc->sicdata);
 	int sockfd;
 	if ( (sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0 ) {

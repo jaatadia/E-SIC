@@ -259,7 +259,7 @@ void initRegex(){
 	ngroups = reg.re_nsub + 1;
 	groups = malloc(ngroups * sizeof(regmatch_t));
 	
-	if(regcomp(&ireg, "^.*tt_Time: ([0-9]+), ttTime_input: ([0-9]+) .*$", REG_EXTENDED)!=0) exit(-11); 
+	if(regcomp(&ireg, "^.*timeRequested:([0-9]+) tictocTime:([0-9]+).*$", REG_EXTENDED)!=0) exit(-11); 
 	ingroups = ireg.re_nsub + 1;
 	igroups = malloc(ngroups * sizeof(regmatch_t));
 
@@ -284,8 +284,8 @@ void parseLine(ParsedT * parsed, char* line){
 		}
 	} else if(regexec(&ireg, line, ingroups, igroups, 0) == 0){
 		parsed->type = INTERRUPTION_LINE;
-		parsed->t[0] = parseNumber(line, igroups[2].rm_so, igroups[2].rm_eo);
-		parsed->t[1] = parseNumber(line, igroups[1].rm_so, igroups[1].rm_eo);
+		parsed->t[0] = parseNumber(line, igroups[1].rm_so, igroups[1].rm_eo);
+		parsed->t[1] = parseNumber(line, igroups[2].rm_so, igroups[2].rm_eo);
 	} else if(regexec(&toreg, line, ingroups, igroups, 0) == 0){
 		parsed->type = TIMEOUT_LINE;
 	} else {
@@ -302,7 +302,6 @@ void loadValues(SicData* sic, char* file, int64_t* estimations, int64_t* size){
     size_t len = 0;
     ssize_t read;
 
-    int assertionNumber = 0;
     (*size) = 0;
 
 	ParsedT parsed;
@@ -318,12 +317,10 @@ void loadValues(SicData* sic, char* file, int64_t* estimations, int64_t* size){
 		} else if(parsed.type == INTERRUPTION_LINE){
 			//printf("tt_input:%ld tt:%ld \n", parsed.t[0], parsed.t[1]);
 			if(parsed.t[1] != 0) {
-				if(assertionNumber >0){
-					assertInMargin("training assertion", parsed.t[1], sicTime(sic, parsed.t[0]), 100);
-					estimations[(*size)] = parsed.t[1];
-					(*size) ++;
-				}
-				assertionNumber ++;
+				assertInMargin("training assertion", parsed.t[1], sicTime(sic, parsed.t[0]), 100);
+				//estimations[(*size)] = parsed.t[1];
+				estimations[(*size)] = sicTime(sic, parsed.t[0]);
+				(*size) ++;
 			}
 		}
 
@@ -340,10 +337,10 @@ void fileTest(){
 
 	
 	int64_t sizeEstimationsNodeA;
-	int64_t estimationsNodeA[200];
+	int64_t estimationsNodeA[5000];
 
 	int64_t sizeEstimationsNodeB;
-	int64_t estimationsNodeB[200];
+	int64_t estimationsNodeB[5000];
 
 
 	printf("\n---------loading1---------.\n");
@@ -359,22 +356,23 @@ void fileTest(){
 		dif = (dif < 0) ? - dif : dif;
 		maxDif = (dif > maxDif) ? dif : maxDif;
 	}
-	printf("MaxDif: %ld\n", maxDif);
+	printf("# samples: %ld\n", sizeEstimationsNodeB);
+	printf("MaxDif: %ld.\n", maxDif);
     
 }
 
 int main(int argc, char** argv){
 	srand(seed);
 
-
+/*
 	syncStatesTestCase();
 	syncNoDifferenceInClocks();
 	syncServerInFuture();
 	syncServerInPast();
 	parallel();
 	parallelSimulatedVariations();
-	syncServerDifFrequency();
-	//fileTest();
+	syncServerDifFrequency();*/
+	fileTest();
 
 	//free resources
 	if(groups) free(groups);

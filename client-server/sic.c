@@ -2,7 +2,7 @@
 #include "halfSampleMode.h"
 #include <stdio.h>
 
-#define TICTOC_SIC_DEBUG
+//#define TICTOC_SIC_DEBUG
 
 int SAMPLE_WINDOWS_SIZE = 3;
 int SAMPLE_WINDOWS[] = {300, 150, 75};
@@ -33,13 +33,13 @@ void sicStepTimeout(SicData* sic){
 		if(sic->state == NO_SYNC) { 
 			sicInit(sic);
 			#ifdef TICTOC_SIC_DEBUG
-			printf("SIC - Restarting NO_SYNC state.");
+			printf("SIC - Restarting NO_SYNC state.\n");
 			#endif
 		} else { //if we have already an actual_m and actual_c we want to keep them
 			sicReset(sic);
 			sic->state = RE_SYNC;
 			#ifdef TICTOC_SIC_DEBUG
-			printf("SIC - Entered RE_SYNC state.");
+			printf("SIC - Entered RE_SYNC state.\n");
 			#endif
 		}
 	}
@@ -64,7 +64,7 @@ void sicStep(SicData* sic, int64_t t1, int64_t t2, int64_t t3, int64_t t4) {
 		sic->actual_m = (1 - ALPHA) * result.m + ALPHA * sic->actual_m;
 		sic->actual_c = (1 - ALPHA) * result.c + ALPHA * sic->actual_c;	
 		#ifdef TICTOC_SIC_DEBUG
-		printf("SIC - Entered SYNC state: new m: %f c: %f\n.", sic->actual_m, sic->actual_c);
+		printf("SIC - Entered SYNC state: new m: %f c: %f.\n", sic->actual_m, sic->actual_c);
 		#endif
 	} else if((sic->state == NO_SYNC || sic->state == RE_SYNC) && sic->syncSteps == P + SAMPLES_SIZE) {
 		LinearFitResult result;
@@ -75,7 +75,7 @@ void sicStep(SicData* sic, int64_t t1, int64_t t2, int64_t t3, int64_t t4) {
 		sic->actual_m = result.m;
 		sic->actual_c = result.c;
 		#ifdef TICTOC_SIC_DEBUG
-		printf("SIC - Entered PRE_SYNC state: new m: %f c: %f\n.", sic->actual_m, sic->actual_c);
+		printf("SIC - Entered PRE_SYNC state: new m: %f c: %f.\n", sic->actual_m, sic->actual_c);
 		#endif
 	} 
 }
@@ -85,13 +85,12 @@ void updateSamples(SicData* sic, int64_t phi, int64_t t){
 
 	
 	if(sic->state == PRE_SYNC || sic->state == SYNC || sic->syncSteps >= SAMPLES_SIZE){
-		int windowsSize = 3;
-		int windows[] = {300, 150, 75};
-		int modePosition = halfSampleModeWindowedMedianPosition(windows, windowsSize, &sic->Wm, 0, SAMPLES_SIZE, getPhi);
+		int modePosition = halfSampleModeWindowedMedianPosition(SAMPLE_WINDOWS, SAMPLE_WINDOWS_SIZE, &sic->Wm, 0, SAMPLES_SIZE, getPhi);
+		//int modePosition = halfSampleModePosition(&sic->Wm, 0, SAMPLES_SIZE, getPhi);
 
-		insertPoint(&sic->Wmode, sic->Wm.array[modePosition - 1].time, sic->Wm.array[modePosition - 1].value);
+		if(modePosition - 1 >= 0) insertPoint(&sic->Wmode, sic->Wm.array[modePosition - 1].time, sic->Wm.array[modePosition - 1].value);
 		insertPoint(&sic->Wmode, sic->Wm.array[modePosition].time, sic->Wm.array[modePosition].value);
-		insertPoint(&sic->Wmode, sic->Wm.array[modePosition + 1].time, sic->Wm.array[modePosition + 1].value);
+		if(modePosition + 1 < SAMPLES_SIZE) insertPoint(&sic->Wmode, sic->Wm.array[modePosition + 1].time, sic->Wm.array[modePosition + 1].value);
 	}
 }
 

@@ -16,21 +16,26 @@
 
 #include "wifi.h"
 #include "daemon.h"
+#include "interruption.h"
 #include "microtime.h"
 
 #define TICTOC_SERVER "192.168.0.146"
 #define TICTOC_PORT 8080
 
+TicTocData * ticTocData;
+
 void app_main(void)
 {
 	connectToWiFi();
 
-	TicTocData * ticTocData = malloc(sizeof(TicTocData));
+	ticTocData = malloc(sizeof(TicTocData));
 	setupTicToc(ticTocData, TICTOC_SERVER, TICTOC_PORT);
+
+    setup_int_ext();
 
     for(;;){
     	vTaskDelay(10000 / portTICK_PERIOD_MS);
-
+    	/*
     	char ticToctimestamp[64];
     	char timestamp[64];
 		microsToTimestamp(esp_timer_get_time(), timestamp);
@@ -40,6 +45,6 @@ void app_main(void)
 			int64_t ttTime = ticTocTime(ticTocData);
 			microsToTimestamp(ttTime, ticToctimestamp);
 			printf("TicTocTime %s (%lld) (systemTime: %s)\n",ticToctimestamp,  ttTime, timestamp);
-    	}
+    	}*/
     }
 }
