@@ -19,10 +19,12 @@
 #include "interruption.h"
 #include "microtime.h"
 
-#define TICTOC_SERVER "192.168.0.146"
+//#define TICTOC_SERVER "192.168.0.146"
+#define TICTOC_SERVER "192.168.0.148"
 #define TICTOC_PORT 8080
 
 TicTocData * ticTocData;
+int64_t timeRequest = -1;
 
 void app_main(void)
 {

@@ -85,13 +85,12 @@ void updateSamples(SicData* sic, int64_t phi, int64_t t){
 
 	
 	if(sic->state == PRE_SYNC || sic->state == SYNC || sic->syncSteps >= SAMPLES_SIZE){
-		int windowsSize = 3;
-		int windows[] = {300, 150, 75};
-		int modePosition = halfSampleModeWindowedMedianPosition(windows, windowsSize, &sic->Wm, 0, SAMPLES_SIZE, getPhi);
+		int modePosition = halfSampleModeWindowedMedianPosition(SAMPLE_WINDOWS, SAMPLE_WINDOWS_SIZE, &sic->Wm, 0, SAMPLES_SIZE, getPhi);
+		//int modePosition = halfSampleModePosition(&sic->Wm, 0, SAMPLES_SIZE, getPhi);
 
-		insertPoint(&sic->Wmode, sic->Wm.array[modePosition - 1].time, sic->Wm.array[modePosition - 1].value);
+		if(modePosition - 1 >= 0) insertPoint(&sic->Wmode, sic->Wm.array[modePosition - 1].time, sic->Wm.array[modePosition - 1].value);
 		insertPoint(&sic->Wmode, sic->Wm.array[modePosition].time, sic->Wm.array[modePosition].value);
-		insertPoint(&sic->Wmode, sic->Wm.array[modePosition + 1].time, sic->Wm.array[modePosition + 1].value);
+		if(modePosition + 1 < SAMPLES_SIZE) insertPoint(&sic->Wmode, sic->Wm.array[modePosition + 1].time, sic->Wm.array[modePosition + 1].value);
 	}
 }
 

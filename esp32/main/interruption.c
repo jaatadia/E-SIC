@@ -1,24 +1,15 @@
 #include "interruption.h"
-#include "daemon.h"
-
 #include "esp_timer.h"
-
-#include "driver/i2c.h"
+#include "driver/gpio.h"
 
 #define GPIO_INPUT_IO_0     16  // Entrada en GPIO 16  → BOTON
-#define GPIO_OUTPUT_IO_0    32 // LED
-#define GPIO_OUTPUT_IO_1    33
-#define GPIO_OUTPUT_PIN_SEL  ((1ULL<<GPIO_OUTPUT_IO_0) | (1ULL<<GPIO_OUTPUT_IO_1))
-
-
-//#define GPIO_INPUT_IO_1     5
 #define GPIO_INPUT_PIN_SEL  ((1ULL<<GPIO_INPUT_IO_0))
 #define ESP_INTR_FLAG_DEFAULT 0
 
-extern TicTocData * ticTocData;
+extern int64_t timeRequest;
 
 static void IRAM_ATTR gpio_isr_handler(void* arg) {
-    ticTocData->timeRequest = esp_timer_get_time();
+    timeRequest = esp_timer_get_time();
 }
 
 

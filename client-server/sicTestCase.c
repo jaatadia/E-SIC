@@ -252,7 +252,13 @@ regmatch_t *igroups;
 
 regex_t toreg; 
 
+regex_t sreg; 
+int sngroups;
+regmatch_t *sgroups;
+
 void initRegex(){
+	if (regInit==1) return;
+
 	regInit = 1; 
 
 	if(regcomp(&reg, "^.*t1:([0-9]+) t2:([0-9]+) t3:([0-9]+) t4:([0-9]+).*$", REG_EXTENDED)!=0) exit(-10); 
@@ -264,6 +270,26 @@ void initRegex(){
 	igroups = malloc(ngroups * sizeof(regmatch_t));
 
 	if(regcomp(&toreg, "^.*TicTocDaemon timeout.*$", 0)!=0) exit(-12); 
+
+	if(regcomp(&sreg, "^.*timeRequested: ([0-9]+).*$", REG_EXTENDED)!=0) exit(-11); 
+	sngroups = sreg.re_nsub + 1;
+	sgroups = malloc(sngroups * sizeof(regmatch_t));	
+}
+
+void freeResources(){
+	if(regInit == 1){
+		regfree(&reg); 
+		int ngroups;
+		free(groups);
+
+		regfree(&ireg); 
+		free(igroups);
+
+		regfree(&toreg); 
+
+		regfree(&sreg); 
+		free(sgroups);
+	}
 }
 
 int64_t parseNumber(char* string, int start, int end){
@@ -276,7 +302,6 @@ int64_t parseNumber(char* string, int start, int end){
 }
 
 void parseLine(ParsedT * parsed, char* line){
-	if (regInit==0) initRegex();
 	if(regexec(&reg, line, ngroups, groups, 0) == 0){
 		parsed->type = TIC_TOC_LINE;
 		for(int i = 0; i<4;i++){
@@ -297,6 +322,7 @@ void parseLine(ParsedT * parsed, char* line){
 /** en input file parsing **/
 	
 void loadValues(SicData* sic, char* file, int64_t* estimations, int64_t* size){
+	initRegex();
 	FILE * fp;
     char * line = NULL;
     size_t len = 0;
@@ -317,11 +343,46 @@ void loadValues(SicData* sic, char* file, int64_t* estimations, int64_t* size){
 		} else if(parsed.type == INTERRUPTION_LINE){
 			//printf("tt_input:%ld tt:%ld \n", parsed.t[0], parsed.t[1]);
 			if(parsed.t[1] != 0) {
+				printf("Iteration %ld - ", (*size));
 				assertInMargin("training assertion", parsed.t[1], sicTime(sic, parsed.t[0]), 100);
-				//estimations[(*size)] = parsed.t[1];
-				estimations[(*size)] = sicTime(sic, parsed.t[0]);
+				estimations[(*size)] = parsed.t[1];
+				//estimations[(*size)] = sicTime(sic, parsed.t[0]);
 				(*size) ++;
 			}
+		}
+
+    }
+	fclose(fp);
+	free(line);
+}
+
+void parseServerLine(ParsedT * parsed, char* line) {
+	if(regexec(&sreg, line, sngroups, sgroups, 0) == 0){
+		parsed->type = INTERRUPTION_LINE;
+		parsed->t[0] = parseNumber(line, sgroups[1].rm_so, sgroups[1].rm_eo);
+	} else {
+		parsed->type = 0;
+	}
+}
+
+void loadServerValues(char* file, int64_t* estimations, int64_t* size){
+	initRegex();
+	FILE * fp;
+    char * line = NULL;
+    size_t len = 0;
+    ssize_t read;
+
+    (*size) = 0;
+
+	ParsedT parsed;
+
+    if((fp = fopen(file, "r")) == 0) exit(-2);
+    while ((read = getline(&line, &len, fp)) != -1) {
+        //printf("line: %s", line);
+        parseServerLine(&parsed, line);
+		if(parsed.type == INTERRUPTION_LINE){
+			estimations[(*size)] = parsed.t[0];
+			(*size) ++;
 		}
 
     }
@@ -344,13 +405,18 @@ void fileTest(){
 
 
 	printf("\n---------loading1---------.\n");
-	loadValues(&sicA, "./ESP1.txt", estimationsNodeA, &sizeEstimationsNodeA);
+	loadValues(&sicA, "./ESP_CLIENT.txt", estimationsNodeA, &sizeEstimationsNodeA);
 
+	
+	loadServerValues("./ESP_SERVER_trimmed.txt", estimationsNodeB, &sizeEstimationsNodeB);
+
+/*
 	printf("\n---------loading2---------.\n");
 	loadValues(&sicB, "./ESP2.txt", estimationsNodeB, &sizeEstimationsNodeB);
-
+*/
 	int64_t maxDif = 0;
 	for(int i = 0; i<sizeEstimationsNodeA && i < sizeEstimationsNodeB; i++) {
+		printf("Iteration %d - ", i);
 		assertInMargin("fileTest: timeServer A B ", estimationsNodeA[i], estimationsNodeB[i], 100);	
 		int64_t dif = estimationsNodeA[i] - estimationsNodeB[i];
 		dif = (dif < 0) ? - dif : dif;
@@ -360,6 +426,8 @@ void fileTest(){
 	printf("MaxDif: %ld.\n", maxDif);
     
 }
+
+
 
 int main(int argc, char** argv){
 	srand(seed);
@@ -374,9 +442,7 @@ int main(int argc, char** argv){
 	syncServerDifFrequency();*/
 	fileTest();
 
-	//free resources
-	if(groups) free(groups);
-	if(groups) free(igroups);
+	freeResources();
 
 	return reportResults();
 }
