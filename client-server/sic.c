@@ -83,7 +83,7 @@ void sicStep(SicData* sic, int64_t t1, int64_t t2, int64_t t3, int64_t t4) {
 void updateSamples(SicData* sic, int64_t phi, int64_t t){	
 	insertOrderedWithTime(&sic->Wm, phi, t);
 
-	
+/*
 	if(sic->state == PRE_SYNC || sic->state == SYNC || sic->syncSteps >= SAMPLES_SIZE){
 		int modePosition = halfSampleModeWindowedMedianPosition(SAMPLE_WINDOWS, SAMPLE_WINDOWS_SIZE, &sic->Wm, 0, SAMPLES_SIZE, getPhi);
 		//int modePosition = halfSampleModePosition(&sic->Wm, 0, SAMPLES_SIZE, getPhi);
@@ -92,6 +92,20 @@ void updateSamples(SicData* sic, int64_t phi, int64_t t){
 		insertPoint(&sic->Wmode, sic->Wm.array[modePosition].time, sic->Wm.array[modePosition].value);
 		if(modePosition + 1 < SAMPLES_SIZE) insertPoint(&sic->Wmode, sic->Wm.array[modePosition + 1].time, sic->Wm.array[modePosition + 1].value);
 	}
+*/
+
+	/*	
+	if(sic->state == PRE_SYNC || sic->state == SYNC || sic->syncSteps >= SAMPLES_SIZE){
+		ModeWindow modewindow;
+		LinearFitResult result; 
+		halfSampleModeWindow(SAMPLE_WINDOWS, SAMPLE_WINDOWS_SIZE, &sic->Wm, 0, SAMPLES_SIZE, getPhi, &modewindow);
+
+		linearFitFunction(&sic->Wm, modewindow.start, modewindow.end, getTime, getPhiDouble, result); 
+	
+		insertPoint(&sic->Wmode, sic->Wm.array[modePosition].time, sic->Wm.array[modePosition].value);
+
+	}*/
+
 }
 
 void calculateLinearFit(SicData* sic, LinearFitResult* result){
@@ -104,16 +118,25 @@ void calculateLinearFit(SicData* sic, LinearFitResult* result){
 	linearFitFunction(&sic->Wm, start, end, getTime, getPhiDouble, result); 
 	*/
 
-	/*
+	
 	int modePosition = halfSampleModeWindowedMedianPosition(SAMPLE_WINDOWS, SAMPLE_WINDOWS_SIZE, &sic->Wm, 0, SAMPLES_SIZE, getPhi);
 	int start = modePosition - SIC_LINEAR_FIT_WINDOW;
 	int end = modePosition + SIC_LINEAR_FIT_WINDOW;
-	if(start < 0) start = 0;
-	if(end > SAMPLES_SIZE) end = SAMPLES_SIZE;
+	//if(start < 0) start = 0;
+	//if(end > SAMPLES_SIZE) end = SAMPLES_SIZE;
 	linearFitFunction(&sic->Wm, start, end, getTime, getPhiDouble, result); 
-	*/
+	
 
-	linearFitResult(&sic->Wmode, result);
+	//linearFitFunction(&sic->Wm, 0, SAMPLES_SIZE, getTime, getPhiDouble, result); 
+
+	//linearFitFunction(&sic->Wm, (int) 0.1 * SAMPLES_SIZE, (int) (.9 * SAMPLES_SIZE), getTime, getPhiDouble, result); 
+
+	/*
+	ModeWindow modewindow;
+	halfSampleModeWindow(SAMPLE_WINDOWS, SAMPLE_WINDOWS_SIZE, &sic->Wm, 0, SAMPLES_SIZE, getPhi, &modewindow);	
+	linearFitFunction(&sic->Wm, modewindow.start, modewindow.end, getTime, getPhiDouble, result); */
+
+	//linearFitResult(&sic->Wmode, result);
 
 }
 

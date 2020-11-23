@@ -4,6 +4,7 @@
 #include <inttypes.h>
 
 //#define HSM_DEBUG
+#define HSM_WINDOW_DEBUG
 
 int halfSampleStep(int N, void* array, int start, int end, int64_t(*fx)(void*, int)){
 	#ifdef HSM_DEBUG
@@ -115,6 +116,12 @@ int halfSampleModePosition(void* array, int start, int end, int64_t(*fx)(void*, 
 }
 
 int halfSampleModeWindowedMedianPosition(int* slidingWindows, int slidingWindowsSize, void* array, int start, int end, int64_t(*fx)(void*, int)) {
+	ModeWindow modeWindow;
+	halfSampleModeWindow(slidingWindows, slidingWindowsSize, array, start, end, fx, &modeWindow);
+	return (modeWindow.start + modeWindow.end)/2;
+}
+
+void halfSampleModeWindow(int* slidingWindows, int slidingWindowsSize, void* array, int start, int end, int64_t(*fx)(void*, int), ModeWindow * modeWindow) {
 	int medianPosition = (start + end)/2;
 	int stepStart = start;
 	int stepEnd = end;
@@ -129,5 +136,27 @@ int halfSampleModeWindowedMedianPosition(int* slidingWindows, int slidingWindows
 		#endif	
 
 	}
-	return medianPosition;
+
+
+	#ifdef HSM_WINDOW_DEBUG	
+	for(int i = start; i < end; i++){
+		printf(";%ld", fx(array, i));
+	}
+
+	printf("\n");
+
+	for(int i = start; i < end; i++){
+		if(i==stepStart || i==stepEnd || i==medianPosition){
+			printf(";%ld", fx(array, i));		
+		} else {
+			printf(";");		
+		}
+	}
+
+	printf("\n");
+	#endif
+	
+	
+	modeWindow->start=stepStart;
+	modeWindow->end=stepEnd;
 }

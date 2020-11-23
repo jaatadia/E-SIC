@@ -4,10 +4,14 @@
 #include <inttypes.h>
 #include "cunit.h"
 
-int seed = 1111;
+int seed = 1112;
 
 int randUpTo(int max) {
 	return rand() % max;
+}
+
+int randSign() {
+	return (rand() % 2 == 0) ? 1:-1;
 }
 
 void syncStatesTestCase() {
@@ -148,17 +152,17 @@ void parallelSimulatedVariations() {
 	
 	for(int i=0; i< 720; i++){
 
-		int64_t timeSinceStart = i*1000000 + randUpTo(200000);
+		int64_t timeSinceStart = i*1000000 + randSign() * randUpTo(200000);
 
-		int64_t timeSinceStartA = timeSinceStart + randUpTo(maxVariation);
-		int64_t vtAS = tAS + randUpTo(maxVariation);
-		int64_t vtSA = tAS + randUpTo(maxVariation);
-		int64_t vserverDelayA = serverDelay + randUpTo(maxVariation);
+		int64_t timeSinceStartA = timeSinceStart + randSign() * randUpTo(maxVariation);
+		int64_t vtAS = tAS + randSign() * randUpTo(maxVariation);
+		int64_t vtSA = tAS + randSign() * randUpTo(maxVariation);
+		int64_t vserverDelayA = serverDelay;
 
-		int64_t timeSinceStartB = timeSinceStart + randUpTo(maxVariation);
-		int64_t vtBS = tBS + randUpTo(maxVariation);
-		int64_t vtSB = tBS + randUpTo(maxVariation);
-		int64_t vserverDelayB = serverDelay + randUpTo(maxVariation);
+		int64_t timeSinceStartB = timeSinceStart + randSign() * randUpTo(maxVariation);
+		int64_t vtBS = tBS + randSign() * randUpTo(maxVariation);
+		int64_t vtSB = tBS + randSign() * randUpTo(maxVariation);
+		int64_t vserverDelayB = serverDelay;
 
 		sicStep(&sicA, 
 			timeSinceStartA + startTimeA, 
@@ -405,15 +409,16 @@ void fileTest(){
 
 
 	printf("\n---------loading1---------.\n");
-	loadValues(&sicA, "./ESP_CLIENT.txt", estimationsNodeA, &sizeEstimationsNodeA);
+	loadValues(&sicA, "./CLIENT_02.txt", estimationsNodeA, &sizeEstimationsNodeA);
 
 	
-	loadServerValues("./ESP_SERVER_trimmed.txt", estimationsNodeB, &sizeEstimationsNodeB);
+	loadServerValues("./SERVER_01.txt", estimationsNodeB, &sizeEstimationsNodeB);
 
 /*
 	printf("\n---------loading2---------.\n");
 	loadValues(&sicB, "./ESP2.txt", estimationsNodeB, &sizeEstimationsNodeB);
 */
+	
 	int64_t maxDif = 0;
 	for(int i = 0; i<sizeEstimationsNodeA && i < sizeEstimationsNodeB; i++) {
 		printf("Iteration %d - ", i);
@@ -432,8 +437,7 @@ void fileTest(){
 int main(int argc, char** argv){
 	srand(seed);
 
-/*
-	syncStatesTestCase();
+	/*syncStatesTestCase();
 	syncNoDifferenceInClocks();
 	syncServerInFuture();
 	syncServerInPast();

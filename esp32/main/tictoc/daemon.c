@@ -15,7 +15,7 @@
 
 #define TICTOC_DAEMON_DEBUG
 
-#define DAEMON_SERVER
+//#define DAEMON_SERVER
 
 /*
 //To use this enable `Component config->FreeRTOS->Enable FreeRTOS trace facility`
@@ -49,8 +49,6 @@ void printRemainingStack(const char* identifier){
 *	
 **************************************************** */
 
-extern int64_t timeRequest;
-
 int setupServerConnection() {
 	int socketfd;
 	if ( (socketfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0 ) { 
@@ -73,6 +71,8 @@ int setupServerConnection() {
 }
 
 void provideTimeStamps(void * parameter) {
+	TicTocData* ticTocData = (TicTocData*) parameter;
+
 	int32_t timestamps[2 * 3];
 	size_t incomingSize = sizeof(int32_t) * 2;
 	size_t outGoingSize = sizeof(int32_t) * 2 * 3;
@@ -88,9 +88,9 @@ void provideTimeStamps(void * parameter) {
 			encodeEpochInMicros(esp_timer_get_time(), timestamps, 2);
 
 			#ifdef TICTOC_DAEMON_DEBUG
-			if(timeRequest != -1) {
-				printf("TicTocDaemon ---------------- timeRequested: %"PRId64"-------------------.\n", timeRequest);
-				timeRequest = -1;
+			if(*(ticTocData->timeRequest) != -1) {
+				printf("TicTocDaemon ---------------- timeRequested: %"PRId64"-------------------.\n", *(ticTocData->timeRequest));
+				*(ticTocData->timeRequest) = -1;
 			}
 			#endif
 
@@ -133,11 +133,11 @@ void getTimeStamps(void * parameter){
 			loopCount++;
 
 			#ifdef TICTOC_DAEMON_DEBUG
-			if(timeRequest != -1) {
+			if(*(ticTocData->timeRequest) != -1) {
 				printf("TicTocDaemon - timeRequested:%"PRId64" tictocTime:%"PRId64".\n",
-						timeRequest,
-						ticTocReady(ticTocData) ? sicTime(&ticTocData->sicdata, timeRequest) : 0);
-				timeRequest = -1;
+						*(ticTocData->timeRequest),
+						ticTocReady(ticTocData) ? sicTime(&ticTocData->sicdata, *(ticTocData->timeRequest)) : 0);
+				*(ticTocData->timeRequest) = -1;
 			}	
 			#endif
 
@@ -174,7 +174,6 @@ void getTimeStamps(void * parameter){
 
 void setupTicToc(TicTocData* ticToc, const char * serverIp, int serverPort)
 {
-	ticToc->timeRequest = -1;
 	
 	#ifndef DAEMON_SERVER
 	sicInit(&ticToc->sicdata);

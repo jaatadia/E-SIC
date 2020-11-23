@@ -19,7 +19,7 @@ struct TicTocData {
 	const char * serverIp;
 	int serverPort;
 	SicData sicdata;
-	int64_t timeRequest;
+	int64_t* timeRequest;
 };
 
 typedef struct TicTocData TicTocData;
