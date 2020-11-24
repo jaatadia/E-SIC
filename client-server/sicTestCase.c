@@ -1,27 +1,17 @@
 #include "sic.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include <inttypes.h>
+#include "cunit.h"
 
-int successTests = 0;
-int failedTests = 0;
-int true = 1;
-int seed = 1111;
-
-void assert(char* testName, int actual, int expected) {
-	int condition = expected == actual;
-	
-	if(condition){
-		successTests++;
-		printf("Test: %s. SUCCESS\n", testName);	
-	} else {
-		failedTests ++;	
-		printf("Test: %s. FAIL. Expected: %d Actual: %d\n", testName, expected, actual);	
-	}
-	
-}
+int seed = 1112;
 
 int randUpTo(int max) {
 	return rand() % max;
+}
+
+int randSign() {
+	return (rand() % 2 == 0) ? 1:-1;
 }
 
 void syncStatesTestCase() {
@@ -76,6 +66,34 @@ void syncStatesTestCase() {
 	assert("reSync steps", sic.syncSteps, 0);
 }
 
+void syncServerDifFrequency() {
+	SicData sicA;
+	sicInit(&sicA);
+	
+	int64_t serverTime = 1602262903000000;
+	int64_t serverDelay = 50;
+	int64_t startTimeA = 1000;
+	int64_t tAS = 2222;
+	
+	double f_multiplier = 1 + 0.01;
+
+	for(int i=0; i< 720; i++){
+		int64_t timeSinceStart = i*1000000;
+		sicStep(&sicA, 
+			startTimeA + f_multiplier * timeSinceStart , 
+			timeSinceStart + tAS + serverTime, 
+			timeSinceStart + tAS + serverTime + serverDelay,
+			startTimeA + f_multiplier * (timeSinceStart + tAS + tAS + serverDelay));
+	}
+
+	int64_t timeSinceStart = 800*1000000;
+	int64_t tS = timeSinceStart + serverTime;
+	int64_t tS_A = sicTime(&sicA, f_multiplier * timeSinceStart + startTimeA);
+	
+	assertInMargin("syncServerDifFrequency", tS_A, tS, 100);
+}
+
+
 void parallel() {
 	SicData sicA;
 	SicData sicB;
@@ -114,8 +132,8 @@ void parallel() {
 	printf("Server Time Acording to NodeA: %ld. Diff to RealServer: %ld.\n", tS_A, tS - tS_A);
 	printf("Server Time Acording to NodeB: %ld. Diff to RealServer: %ld.\n", tS_B, tS - tS_B);
 	
-	assert("Parallel: A in error margin", true, ((tS - tS_A) < 100) && ((tS - tS_A) > -100));
-	assert("Parallel: B in error margin", true, ((tS - tS_B) < 100) && ((tS - tS_B) > -100));
+	assertInMargin("Parallel: server time A", tS_A, tS, 100);
+	assertInMargin("Parallel: server time B", tS_B, tS, 100);
 }
 
 void parallelSimulatedVariations() {
@@ -134,17 +152,17 @@ void parallelSimulatedVariations() {
 	
 	for(int i=0; i< 720; i++){
 
-		int64_t timeSinceStart = i*1000000 + randUpTo(200000);
+		int64_t timeSinceStart = i*1000000 + randSign() * randUpTo(200000);
 
-		int64_t timeSinceStartA = timeSinceStart + randUpTo(maxVariation);
-		int64_t vtAS = tAS + randUpTo(maxVariation);
-		int64_t vtSA = tAS + randUpTo(maxVariation);
-		int64_t vserverDelayA = serverDelay + randUpTo(maxVariation);
+		int64_t timeSinceStartA = timeSinceStart + randSign() * randUpTo(maxVariation);
+		int64_t vtAS = tAS + randSign() * randUpTo(maxVariation);
+		int64_t vtSA = tAS + randSign() * randUpTo(maxVariation);
+		int64_t vserverDelayA = serverDelay;
 
-		int64_t timeSinceStartB = timeSinceStart + randUpTo(maxVariation);
-		int64_t vtBS = tBS + randUpTo(maxVariation);
-		int64_t vtSB = tBS + randUpTo(maxVariation);
-		int64_t vserverDelayB = serverDelay + randUpTo(maxVariation);
+		int64_t timeSinceStartB = timeSinceStart + randSign() * randUpTo(maxVariation);
+		int64_t vtBS = tBS + randSign() * randUpTo(maxVariation);
+		int64_t vtSB = tBS + randSign() * randUpTo(maxVariation);
+		int64_t vserverDelayB = serverDelay;
 
 		sicStep(&sicA, 
 			timeSinceStartA + startTimeA, 
@@ -169,8 +187,8 @@ void parallelSimulatedVariations() {
 	printf("Server Time Acording to NodeA: %ld. Diff to RealServer: %ld.\n", tS_A, tS - tS_A);
 	printf("Server Time Acording to NodeB: %ld. Diff to RealServer: %ld.\n", tS_B, tS - tS_B);
 	
-	assert("Parallel Variations: A in error margin", true, ((tS - tS_A) < 100) && ((tS - tS_A) > -100));
-	assert("Parallel Variations: B in error margin", true, ((tS - tS_B) < 100) && ((tS - tS_B) > -100));
+	assertInMargin("Parallel Variations: server time A", tS_A, tS, 100);
+	assertInMargin("Parallel Variations: server time B", tS_B, tS, 100);
 }
 
 
@@ -213,19 +231,222 @@ void syncServerInPast() {
 	assert("Synced algorithm server in past", sicTime(&sic, 1000000), 0);
 }
 
+/** input file parsing **/
+struct ParsedT {
+	int type;
+	int64_t t[4];
+};
+
+typedef struct ParsedT ParsedT;
+
+#include <regex.h> 
+int TIC_TOC_LINE = 0;
+int INTERRUPTION_LINE = 1;
+int TIMEOUT_LINE = 2;
+
+int regInit = 0; 
+
+regex_t reg; 
+int ngroups;
+regmatch_t *groups;
+
+regex_t ireg; 
+int ingroups;
+regmatch_t *igroups;
+
+regex_t toreg; 
+
+regex_t sreg; 
+int sngroups;
+regmatch_t *sgroups;
+
+void initRegex(){
+	if (regInit==1) return;
+
+	regInit = 1; 
+
+	if(regcomp(&reg, "^.*t1:([0-9]+) t2:([0-9]+) t3:([0-9]+) t4:([0-9]+).*$", REG_EXTENDED)!=0) exit(-10); 
+	ngroups = reg.re_nsub + 1;
+	groups = malloc(ngroups * sizeof(regmatch_t));
+	
+	if(regcomp(&ireg, "^.*timeRequested:([0-9]+) tictocTime:([0-9]+).*$", REG_EXTENDED)!=0) exit(-11); 
+	ingroups = ireg.re_nsub + 1;
+	igroups = malloc(ngroups * sizeof(regmatch_t));
+
+	if(regcomp(&toreg, "^.*TicTocDaemon timeout.*$", 0)!=0) exit(-12); 
+
+	if(regcomp(&sreg, "^.*timeRequested: ([0-9]+).*$", REG_EXTENDED)!=0) exit(-11); 
+	sngroups = sreg.re_nsub + 1;
+	sgroups = malloc(sngroups * sizeof(regmatch_t));	
+}
+
+void freeResources(){
+	if(regInit == 1){
+		regfree(&reg); 
+		int ngroups;
+		free(groups);
+
+		regfree(&ireg); 
+		free(igroups);
+
+		regfree(&toreg); 
+
+		regfree(&sreg); 
+		free(sgroups);
+	}
+}
+
+int64_t parseNumber(char* string, int start, int end){
+	int64_t result = 0;
+	for(int j = start; j< end; j++) {
+		result *= 10;
+		result += string[j] - '0';
+	}
+	return result;
+}
+
+void parseLine(ParsedT * parsed, char* line){
+	if(regexec(&reg, line, ngroups, groups, 0) == 0){
+		parsed->type = TIC_TOC_LINE;
+		for(int i = 0; i<4;i++){
+			parsed->t[i] = parseNumber(line, groups[i+1].rm_so, groups[i+1].rm_eo);
+		}
+	} else if(regexec(&ireg, line, ingroups, igroups, 0) == 0){
+		parsed->type = INTERRUPTION_LINE;
+		parsed->t[0] = parseNumber(line, igroups[1].rm_so, igroups[1].rm_eo);
+		parsed->t[1] = parseNumber(line, igroups[2].rm_so, igroups[2].rm_eo);
+	} else if(regexec(&toreg, line, ingroups, igroups, 0) == 0){
+		parsed->type = TIMEOUT_LINE;
+	} else {
+		printf("line not matched: %s\n", line);
+		exit(-11);
+	}
+}
+
+/** en input file parsing **/
+	
+void loadValues(SicData* sic, char* file, int64_t* estimations, int64_t* size){
+	initRegex();
+	FILE * fp;
+    char * line = NULL;
+    size_t len = 0;
+    ssize_t read;
+
+    (*size) = 0;
+
+	ParsedT parsed;
+
+    if((fp = fopen(file, "r")) == 0) exit(-2);
+    while ((read = getline(&line, &len, fp)) != -1) {
+        //printf("line: %s", line);
+        parseLine(&parsed, line);
+		
+		if(parsed.type == TIC_TOC_LINE){
+			//printf("t1:%ld t2:%ld t3:%ld t4:%ld\n", parsed.t[0], parsed.t[1], parsed.t[2], parsed.t[3]);
+			sicStep(sic, parsed.t[0], parsed.t[1], parsed.t[2], parsed.t[3]);	
+		} else if(parsed.type == INTERRUPTION_LINE){
+			//printf("tt_input:%ld tt:%ld \n", parsed.t[0], parsed.t[1]);
+			if(parsed.t[1] != 0) {
+				printf("Iteration %ld - ", (*size));
+				assertInMargin("training assertion", parsed.t[1], sicTime(sic, parsed.t[0]), 100);
+				estimations[(*size)] = parsed.t[1];
+				//estimations[(*size)] = sicTime(sic, parsed.t[0]);
+				(*size) ++;
+			}
+		}
+
+    }
+	fclose(fp);
+	free(line);
+}
+
+void parseServerLine(ParsedT * parsed, char* line) {
+	if(regexec(&sreg, line, sngroups, sgroups, 0) == 0){
+		parsed->type = INTERRUPTION_LINE;
+		parsed->t[0] = parseNumber(line, sgroups[1].rm_so, sgroups[1].rm_eo);
+	} else {
+		parsed->type = 0;
+	}
+}
+
+void loadServerValues(char* file, int64_t* estimations, int64_t* size){
+	initRegex();
+	FILE * fp;
+    char * line = NULL;
+    size_t len = 0;
+    ssize_t read;
+
+    (*size) = 0;
+
+	ParsedT parsed;
+
+    if((fp = fopen(file, "r")) == 0) exit(-2);
+    while ((read = getline(&line, &len, fp)) != -1) {
+        //printf("line: %s", line);
+        parseServerLine(&parsed, line);
+		if(parsed.type == INTERRUPTION_LINE){
+			estimations[(*size)] = parsed.t[0];
+			(*size) ++;
+		}
+
+    }
+	fclose(fp);
+	free(line);
+}
+
+void fileTest(){
+	SicData sicA;
+	SicData sicB;
+	sicInit(&sicA);
+	sicInit(&sicB);
+
+	
+	int64_t sizeEstimationsNodeA;
+	int64_t estimationsNodeA[5000];
+
+	int64_t sizeEstimationsNodeB;
+	int64_t estimationsNodeB[5000];
+
+
+	printf("\n---------loading1---------.\n");
+	loadValues(&sicA, "./CLIENT_02.txt", estimationsNodeA, &sizeEstimationsNodeA);
+
+	
+	loadServerValues("./SERVER_01.txt", estimationsNodeB, &sizeEstimationsNodeB);
+
+/*
+	printf("\n---------loading2---------.\n");
+	loadValues(&sicB, "./ESP2.txt", estimationsNodeB, &sizeEstimationsNodeB);
+*/
+	
+	int64_t maxDif = 0;
+	for(int i = 0; i<sizeEstimationsNodeA && i < sizeEstimationsNodeB; i++) {
+		printf("Iteration %d - ", i);
+		assertInMargin("fileTest: timeServer A B ", estimationsNodeA[i], estimationsNodeB[i], 100);	
+		int64_t dif = estimationsNodeA[i] - estimationsNodeB[i];
+		dif = (dif < 0) ? - dif : dif;
+		maxDif = (dif > maxDif) ? dif : maxDif;
+	}
+	printf("# samples: %ld\n", sizeEstimationsNodeB);
+	printf("MaxDif: %ld.\n", maxDif);
+    
+}
+
+
+
 int main(int argc, char** argv){
 	srand(seed);
 
-	syncStatesTestCase();
+	/*syncStatesTestCase();
 	syncNoDifferenceInClocks();
 	syncServerInFuture();
 	syncServerInPast();
 	parallel();
 	parallelSimulatedVariations();
+	syncServerDifFrequency();*/
+	fileTest();
 
+	freeResources();
 
-	//TODO extract testing logic to its own module
-	printf("\n-------------------------------------------------------\n");
-	printf("Run: %d, Succesful: %d, Fail: %d.\n", failedTests + successTests, successTests, failedTests);
-	return 0;
+	return reportResults();
 }

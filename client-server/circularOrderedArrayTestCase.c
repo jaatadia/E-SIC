@@ -1,53 +1,14 @@
 #include "circularOrderedArray.h"
 #include <stdio.h>
+#include "cunit.h"
 
-int successTests = 0;
-int failedTests = 0;
 
-void assert(char* testName, int actual, int expected) {
-	int condition = expected == actual;
-	
-	if(condition){
-		successTests++;
-		printf("Test: %s. SUCCESS\n", testName);	
-	} else {
-		failedTests ++;	
-		printf("Test: %s. FAIL. Expected: %d Actual: %d\n", testName, expected, actual);	
-	}
-	
+int64_t f_value(void * node, int position){
+	return ((Node*) node)[position].value;
 }
 
-int64_t f_value(Node * node){
-	return node->value;
-}
-
-int64_t f_order(Node * node){
-	return node->order;
-}
-
-void assertPositions(char* testName, Node * arrayActual, int64_t(*fn)(Node*), int64_t * arrayExpected, int size){
-
-	int fail = 0;
-	
-	printf("Test: %s. ", testName);	
-	for (int i = 0; i < size; i++){
-		int64_t actual = (*fn)(&arrayActual[i]);
-		if(actual == arrayExpected[i]){
-			printf(" %ld✓", actual);	
-		} else {
-			fail = 1;
-			printf(" %ld!=%ld", actual, arrayExpected[i]);	
-		}
-	}
-
-	if(!fail){
-		successTests++;
-		printf(" SUCCESS\n");	
-	} else {
-		failedTests ++;	
-		printf(" FAIL\n");	
-	}
-
+int64_t f_order(void * node, int position){
+	return ((Node*) node)[position].order;
 }
 
 void correctInsertStarting() {
@@ -158,8 +119,7 @@ int main(int argc, char** argv){
 	
 	correctInsertStarting();
 	correctInsertOnceFull();
-	printf("\n-------------------------------------------------------\n");
-	printf("Run: %d, Succesful: %d, Fail: %d.\n", failedTests + successTests, successTests, failedTests);
-	return 0;
+	
+	return reportResults();
 
 }

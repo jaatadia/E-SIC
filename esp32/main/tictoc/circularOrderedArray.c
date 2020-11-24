@@ -15,14 +15,17 @@ void swap(Node * first, Node * second){
 	//aux = first
 	aux.value = first->value;
 	aux.order = first->order;
+	aux.time = first->time;
 	 
 	//first = second 
 	first->value = second->value;
 	first->order = second->order;
+	first->time = second->time;
 
 	//second = aux
 	second->value = aux.value;
 	second->order = aux.order;
+	second->time = aux.time;
 }
 
 int orderRight(Node * array, int position, int size){
@@ -68,7 +71,7 @@ void printDebugInfo(CircularOrderedArray* array){
 	printf("CircularOrderedArray - Next Order to override: %d.\n", array->next);
 }
 
-void insertOrdered(CircularOrderedArray* array, int64_t value){
+void insertOrderedWithTime(CircularOrderedArray* array, int64_t value, int64_t time){
 	int insertPosition;
 	if(array->size < CIRCULAR_ORDERED_ARRAY_MAX_SIZE){
 		insertPosition = array->size;
@@ -78,6 +81,7 @@ void insertOrdered(CircularOrderedArray* array, int64_t value){
 	}
 
 	array->array[insertPosition].value=value;
+	array->array[insertPosition].time=time;
 	array->array[insertPosition].order=array->next;
 	array->next = (array->next + 1) % CIRCULAR_ORDERED_ARRAY_MAX_SIZE;
 
@@ -88,6 +92,14 @@ void insertOrdered(CircularOrderedArray* array, int64_t value){
 	#endif
 }
 
+void insertOrdered(CircularOrderedArray* array, int64_t value){
+	insertOrderedWithTime(array, value, 0);
+}
+
+Node* medianNode(CircularOrderedArray* array){
+	return &array->array[array->size/2];
+}
+
 int64_t median(CircularOrderedArray* array){
-	return array->array[array->size/2].value;
+	return medianNode(array)->value;
 }

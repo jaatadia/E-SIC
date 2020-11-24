@@ -3,3 +3,5 @@ client-server/server
 client-server/client
 *.o
 esp32/build/*
+*.pyc
+graphs/*.png

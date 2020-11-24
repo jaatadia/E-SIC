@@ -9,6 +9,7 @@
 
 struct Node {
 	int64_t value;
+	int64_t time;
 	int order;
 };
 
@@ -24,5 +25,8 @@ typedef struct CircularOrderedArray CircularOrderedArray;
 
 void initCircularOrderedArray(CircularOrderedArray *);
 void insertOrdered(CircularOrderedArray *, int64_t );
+void insertOrderedWithTime(CircularOrderedArray *, int64_t, int64_t);
 int64_t median(CircularOrderedArray *);
+Node* medianNode(CircularOrderedArray *);
+
 #endif

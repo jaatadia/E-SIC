@@ -1,22 +1,6 @@
 #include "linearfit.h"
+#include "cunit.h"
 #include <stdio.h>
-
-int successTests = 0;
-int failedTests = 0;
-
-void assert(char* testName, int actual, int expected) {
-	int condition = expected == actual;
-	
-	if(condition){
-		successTests++;
-		printf("Test: %s. SUCCESS\n", testName);	
-	} else {
-		failedTests ++;	
-		printf("Test: %s. FAIL. Expected: %d Actual: %d\n", testName, expected, actual);	
-	}
-	
-}
-
 
 void correctLinearFit(){
 
@@ -51,6 +35,21 @@ void correctLinearFit(){
 
 }
 
+void linearfitHorizontal(){
+	CircularLinearFitArray circularLinearFitArray;
+	initCircularLinearFitArray(&circularLinearFitArray);
+
+	insertPoint(&circularLinearFitArray, 1, 1);
+	insertPoint(&circularLinearFitArray, 2, 1);
+	insertPoint(&circularLinearFitArray, 3, 1);
+	insertPoint(&circularLinearFitArray, 4, 1);
+
+	linearFit(&circularLinearFitArray);
+	assert("Horizontal linearfit slope", circularLinearFitArray.m, 0);
+	assert("Horizontal linearfit intercept", circularLinearFitArray.c, 1);
+}
+
+
 
 int main(int argc, char** argv){
 	if (CICRULAR_LINEAR_FIT_ARRAY_MAX_SIZE != 4){
@@ -59,8 +58,7 @@ int main(int argc, char** argv){
 	}
 	
 	correctLinearFit();
-	printf("\n-------------------------------------------------------\n");
-	printf("Run: %d, Succesful: %d, Fail: %d.\n", failedTests + successTests, successTests, failedTests);
-	return 0;
-
+	linearfitHorizontal();
+	
+	return reportResults();
 }
