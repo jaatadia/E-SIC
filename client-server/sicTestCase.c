@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <inttypes.h>
 #include "cunit.h"
+#include "limits.h"
 
 int seed = 1112;
 
@@ -420,14 +421,17 @@ void fileTest(){
 */
 	
 	int64_t maxDif = 0;
+	int64_t minDif = LONG_MAX;
 	for(int i = 0; i<sizeEstimationsNodeA && i < sizeEstimationsNodeB; i++) {
 		printf("Iteration %d - ", i);
 		assertInMargin("fileTest: timeServer A B ", estimationsNodeA[i], estimationsNodeB[i], 100);	
 		int64_t dif = estimationsNodeA[i] - estimationsNodeB[i];
 		dif = (dif < 0) ? - dif : dif;
 		maxDif = (dif > maxDif) ? dif : maxDif;
+		minDif = (dif < minDif) ? dif : minDif;
 	}
 	printf("# samples: %ld\n", sizeEstimationsNodeB);
+	printf("MinDif: %ld.\n", minDif);
 	printf("MaxDif: %ld.\n", maxDif);
     
 }
@@ -437,13 +441,13 @@ void fileTest(){
 int main(int argc, char** argv){
 	srand(seed);
 
-	/*syncStatesTestCase();
+	syncStatesTestCase();
 	syncNoDifferenceInClocks();
 	syncServerInFuture();
 	syncServerInPast();
 	parallel();
 	parallelSimulatedVariations();
-	syncServerDifFrequency();*/
+	syncServerDifFrequency();
 	fileTest();
 
 	freeResources();

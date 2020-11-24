@@ -4,7 +4,7 @@
 #include <inttypes.h>
 
 //#define HSM_DEBUG
-#define HSM_WINDOW_DEBUG
+//#define HSM_WINDOW_DEBUG
 
 int halfSampleStep(int N, void* array, int start, int end, int64_t(*fx)(void*, int)){
 	#ifdef HSM_DEBUG
