@@ -28,7 +28,16 @@ with open('samples.csv','r') as csvfile:
 				if y>ymax:
 					ymax = y 
 
+nbins=600/20
+bins=[]
+increment = (ymax - ymin)/nbins
+acum = ymin
+while (acum<=ymax):
+	bins = bins + [acum]
+	acum = acum + increment
+
 counter = 0
+colors = ['green', 'red', 'blue']
 
 with open('samples.csv','r') as csvfile:	
 	plots = csv.reader(csvfile, delimiter=';')
@@ -36,15 +45,45 @@ with open('samples.csv','r') as csvfile:
 	for (rowI, rowJ) in grouped(plots):
 		plt.figure(counter) 
 		plt.plot(range(0,600), [int(cell) for cell in rowI[1:]])
-		plt.plot(range(0,600), [np.nan if (cell == '') else int(cell) for cell in rowJ[1:]], 'o-')
+		#plt.plot(range(0,600), [np.nan if (cell == '') else int(cell) for cell in rowJ[1:]], 'o-')
+
+		color=0
+		position = 0
+		for cell in rowJ[1:]:
+			if(cell!=''):
+				plt.axvline(position, color=colors[color], linestyle='dashed', label=cell)
+				color+=1
+			position += 1
+
 		plt.title('Iteration ' + str(counter))
 		plt.xlabel('Sample')
-		plt.ylabel('Phi')
+		plt.ylabel('Phi (MicroSeconds)')
 		axes = plt.gca()
 		axes.set_xlim([0,599])
 		axes.set_ylim([ymin,ymax])
 		plt.legend()
 		plt.savefig('Iteration ' + str(counter) + '.png')
 		plt.close()
+
+
+		plt.figure(counter) 
+		plt.hist([int(cell) for cell in rowI[1:]], bins=30)
+		#plt.plot(range(0,600), [np.nan if (cell == '') else int(cell) for cell in rowJ[1:]], 'o-')
+
+
+		color=0
+		for cell in rowJ[1:]:
+			if(cell!=''):
+				plt.axvline(int(cell), color=colors[color], linestyle='dashed', label=cell)
+				color+=1
+
+		plt.xlabel('Phi (MicroSeconds)')
+		plt.ylabel('Samples')
+		plt.title('Iteration ' + str(counter))
+		plt.legend()
+		plt.savefig('Histogram Iteration ' + str(counter) + '.png')
+		plt.close()
+
+		
 
 		counter += 1

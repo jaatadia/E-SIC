@@ -126,7 +126,7 @@ void calculateLinearFit(SicData* sic, LinearFitResult* result){
 	//if(end > SAMPLES_SIZE) end = SAMPLES_SIZE;
 	linearFitFunction(&sic->Wm, start, end, getTime, getPhiDouble, result); 
 	
-
+	//printf("\n");
 	//linearFitFunction(&sic->Wm, 0, SAMPLES_SIZE, getTime, getPhiDouble, result); 
 
 	//linearFitFunction(&sic->Wm, (int) 0.1 * SAMPLES_SIZE, (int) (.9 * SAMPLES_SIZE), getTime, getPhiDouble, result); 

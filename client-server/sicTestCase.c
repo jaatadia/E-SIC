@@ -6,6 +6,7 @@
 #include "limits.h"
 
 int seed = 1112;
+int rtt = 0;
 
 int randUpTo(int max) {
 	return rand() % max;
@@ -338,6 +339,7 @@ void loadValues(SicData* sic, char* file, int64_t* estimations, int64_t* size){
 	ParsedT parsed;
 
     if((fp = fopen(file, "r")) == 0) exit(-2);
+
     while ((read = getline(&line, &len, fp)) != -1) {
         //printf("line: %s", line);
         parseLine(&parsed, line);
@@ -345,6 +347,9 @@ void loadValues(SicData* sic, char* file, int64_t* estimations, int64_t* size){
 		if(parsed.type == TIC_TOC_LINE){
 			//printf("t1:%ld t2:%ld t3:%ld t4:%ld\n", parsed.t[0], parsed.t[1], parsed.t[2], parsed.t[3]);
 			sicStep(sic, parsed.t[0], parsed.t[1], parsed.t[2], parsed.t[3]);	
+			//printf(", %ld", parsed.t[3] - parsed.t[0]);
+			//printf("RTT %d: %ld.\n", rtt, parsed.t[3] - parsed.t[0]);
+			rtt++;
 		} else if(parsed.type == INTERRUPTION_LINE){
 			//printf("tt_input:%ld tt:%ld \n", parsed.t[0], parsed.t[1]);
 			if(parsed.t[1] != 0) {
@@ -354,9 +359,12 @@ void loadValues(SicData* sic, char* file, int64_t* estimations, int64_t* size){
 				//estimations[(*size)] = sicTime(sic, parsed.t[0]);
 				(*size) ++;
 			}
+		} else if(parsed.type == TIMEOUT_LINE){
+			sicStepTimeout(sic);
 		}
 
     }
+    printf("\n");
 	fclose(fp);
 	free(line);
 }
@@ -410,10 +418,10 @@ void fileTest(){
 
 
 	printf("\n---------loading1---------.\n");
-	loadValues(&sicA, "./CLIENT_02.txt", estimationsNodeA, &sizeEstimationsNodeA);
+	loadValues(&sicA, "./CLIENT_03.txt", estimationsNodeA, &sizeEstimationsNodeA);
 
 	
-	loadServerValues("./SERVER_01.txt", estimationsNodeB, &sizeEstimationsNodeB);
+	loadServerValues("./SERVER_03.txt", estimationsNodeB, &sizeEstimationsNodeB);
 
 /*
 	printf("\n---------loading2---------.\n");
@@ -422,14 +430,17 @@ void fileTest(){
 	
 	int64_t maxDif = 0;
 	int64_t minDif = LONG_MAX;
+
 	for(int i = 0; i<sizeEstimationsNodeA && i < sizeEstimationsNodeB; i++) {
 		printf("Iteration %d - ", i);
 		assertInMargin("fileTest: timeServer A B ", estimationsNodeA[i], estimationsNodeB[i], 100);	
 		int64_t dif = estimationsNodeA[i] - estimationsNodeB[i];
+		//printf(", %ld", dif);
 		dif = (dif < 0) ? - dif : dif;
 		maxDif = (dif > maxDif) ? dif : maxDif;
 		minDif = (dif < minDif) ? dif : minDif;
 	}
+	printf("\n");
 	printf("# samples: %ld\n", sizeEstimationsNodeB);
 	printf("MinDif: %ld.\n", minDif);
 	printf("MaxDif: %ld.\n", maxDif);

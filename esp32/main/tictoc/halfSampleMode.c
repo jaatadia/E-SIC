@@ -6,6 +6,9 @@
 //#define HSM_DEBUG
 //#define HSM_WINDOW_DEBUG
 
+//int iteration = 0;
+
+
 int halfSampleStep(int N, void* array, int start, int end, int64_t(*fx)(void*, int)){
 	#ifdef HSM_DEBUG
 	printf("HalfSampleMode - start: %d, end: %d, N: %d.\n", start, end, N);
@@ -137,6 +140,10 @@ void halfSampleModeWindow(int* slidingWindows, int slidingWindowsSize, void* arr
 
 	}
 
+
+
+	//printf("HalfSampleMode - iteration: %d.\n", iteration);
+	//iteration++;
 
 	#ifdef HSM_WINDOW_DEBUG	
 	for(int i = start; i < end; i++){

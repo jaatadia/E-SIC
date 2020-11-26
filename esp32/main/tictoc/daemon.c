@@ -142,7 +142,8 @@ void getTimeStamps(void * parameter){
 			#endif
 
 			//printRemainingStack("TicTocDaemon - Start Loop");
-			encodeEpochInMicros(esp_timer_get_time(), timestamps, 0);
+			int64_t t1 = esp_timer_get_time();
+			encodeEpochInMicros(t1, timestamps, 0);
 
 			//sending t1
 			sendto(ticTocData->sock, (const int32_t *)timestamps, outGoingSize,  0, (const struct sockaddr *) &servaddr, servaddrSize);
@@ -153,12 +154,20 @@ void getTimeStamps(void * parameter){
 					resultArray[i]=decodeEpochInMicros(timestamps,2*i);
 				}
 
-				if (loopCount > 10) {
+				if(resultArray[0]!=t1){
+					//receive old package discard it, and wait for the current one, that we discard due to contamination caused by the old package
+					#ifdef TICTOC_DAEMON_DEBUG
+					printf("TicTocDaemon timeout - old package\n");
+					#endif	
+					recv(ticTocData->sock, (int32_t *)timestamps, incomingSize, MSG_WAITALL);
+
+				} else if (loopCount > 10) {
 					#ifdef TICTOC_DAEMON_DEBUG
 					printf("TicTocDaemon %lld - t1:%"PRId64" t2:%"PRId64" t3:%"PRId64" t4:%"PRId64"\n", loopCount, resultArray[0], resultArray[1], resultArray[2], resultArray[3]);
 					#endif
 					sicStep(&ticTocData->sicdata, resultArray[0], resultArray[1], resultArray[2], resultArray[3]);	
 				}
+
 				
 			} else {
 				#ifdef TICTOC_DAEMON_DEBUG
