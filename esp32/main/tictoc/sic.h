@@ -4,10 +4,10 @@
 #include "linearfit.h"
 #include "circularOrderedArray.h"
 
-#define RTT_SIZE CIRCULAR_ORDERED_ARRAY_MAX_SIZE
+#define RTT_SIZE 600
 
 //With the new implementation, indicate where to start and stop 
-#define SAMPLES_SIZE CIRCULAR_ORDERED_ARRAY_MAX_SIZE
+#define SAMPLES_SIZE 600
 #define SIC_LINEAR_FIT_WINDOW 30
 
 #define P 60
@@ -26,7 +26,7 @@ struct SicData {
 	int syncSteps;
     int to;
 
-    CircularOrderedArray Wm;
+    CircularOrderedArray* Wm;
 
     double actual_m;
     double actual_c;
@@ -35,6 +35,8 @@ struct SicData {
 typedef struct SicData SicData;
 
 void sicInit(SicData* sic);
+void sicEnd(SicData* sic);
+
 void sicStepTimeout(SicData* sic);
 void sicStep(SicData* sic, int64_t t1, int64_t t2, int64_t t3, int64_t t4);
 

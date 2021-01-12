@@ -4,49 +4,85 @@
 
 //#define TICTOC_CIRCULAR_ARRAY_DEBUG
 
-void initCircularOrderedArray(CircularOrderedArray * array){
+CircularOrderedArray * initCircularOrderedArray(int maxSize, size_t dataSize, void (*cpy)(void*, void*), int (*cmp)(void*, void*)){
+	CircularOrderedArray* array = malloc(sizeof(CircularOrderedArray));
+	array->next = 0;
+	array->size = 0;
+
+	array->maxSize = maxSize;
+	array->cpy = cpy;
+	array->cmp = cmp;
+	array->order = malloc(sizeof(int)*maxSize);
+	array->data = malloc(sizeof(void*)*maxSize);
+
+	for(int i = 0; i < maxSize; i ++) {
+		array->data[i]=malloc(dataSize);
+	}
+
+	return array;
+}
+
+void resetCircularOrderedArray(CircularOrderedArray* array){
 	array->next = 0;
 	array->size = 0;
 }
 
-void swap(Node * first, Node * second){
-	Node aux;
-	copyNode(first, &aux); //aux = first	 
-	copyNode(second, first); //first = second 
-	copyNode(&aux, second); //second = aux
+
+void freeCircularOrderedArray(CircularOrderedArray* array){
+	for(int i = 0; i < array->maxSize; i ++) {
+		free(array->data[i]);
+	}
+	free(array->data);
+	free(array->order);
+	free(array);
 }
 
-int orderRight(Node * array, int position, int size){
+void swap(CircularOrderedArray * array, int first, int second){
+	// aux = first;
+	int orderAux = array->order[first];
+	void* dataAux = array->data[first];
+
+	// first = second;
+	array->order[first] = array->order[second];
+	array->data[first] = array->data[second];
+
+	// second = aux;
+	array->order[second] = orderAux;
+	array->data[second] = dataAux;
+}
+
+int orderRight(CircularOrderedArray * array, int position){
 	int nextPosition = position;
-	while((nextPosition + 1 < size) && array[nextPosition].value > array[nextPosition+1].value){ //hasNext && bigger than next
-		swap(&array[nextPosition], &array[nextPosition+1]);
+	while((nextPosition + 1 < array->size) && (*array->cmp)(array->data[nextPosition], array->data[nextPosition+1]) > 0){ //hasNext && bigger than next
+		swap(array, nextPosition, nextPosition+1);
 		nextPosition++;
 	}
 	return position!=nextPosition;
 }
 
-void orderLeft(Node * array, int position){
-	while(position > 0 && array[position].value < array[position-1].value){ //hasPrevious && smaller than previous
-		swap(&array[position], &array[position-1]);
+void orderLeft(CircularOrderedArray * array, int position){
+	while(position > 0 && (*array->cmp)(array->data[position], array->data[position-1]) < 0){ //hasPrevious && smaller than previous
+		swap(array, position, position-1);
 		position--;
 	}
 }
 
-void orderPosition(Node * array, int position, int size){
-	if(!orderRight(array, position, size)){
+void orderPosition(CircularOrderedArray * array, int position){
+	if(!orderRight(array, position)){
 		orderLeft(array, position);
 	}	
 }
 
-int findPosition(Node* array, int size, int order) {
+int findPosition(int* array, int size, int order) {
 	for(int i = 0; i < size; i++){
-		if(array[i].order == order) return i;
+		if(array[i] == order) return i;
 	}
 
 	//should never arrive here
 	return -1;
 }
 
+/*
 void printDebugInfo(CircularOrderedArray* array){
 	printf("CircularOrderedArray - Array Conent: \n");	
 	printf("CircularOrderedArray - [");	
@@ -58,31 +94,26 @@ void printDebugInfo(CircularOrderedArray* array){
 	printf("CircularOrderedArray - Current Median: %"PRId64".\n", median(array));
 	printf("CircularOrderedArray - Next Order to override: %d.\n", array->next);
 }
+*/
 
-void insertOrdered(CircularOrderedArray* array, Node* node){
+void insertOrdered(CircularOrderedArray* array, void* node){
 	int insertPosition;
-	if(array->size < CIRCULAR_ORDERED_ARRAY_MAX_SIZE){
+	if(array->size < array->maxSize){
 		insertPosition = array->size;
 		array->size++;
 	} else {
-		insertPosition = findPosition(array->array, CIRCULAR_ORDERED_ARRAY_MAX_SIZE, array->next) ;
+		insertPosition = findPosition(array->order, array->maxSize, array->next) ;
 	}
 
-	copyNode(node, &array->array[insertPosition]);
-	array->array[insertPosition].order=array->next;
-	array->next = (array->next + 1) % CIRCULAR_ORDERED_ARRAY_MAX_SIZE;
+	(*array->cpy)(node, array->data[insertPosition]);
+	array->order[insertPosition] = array->next;
+	array->next = (array->next + 1) % array->maxSize;
 
-	orderPosition(array->array, insertPosition, array->size);
+	orderPosition(array, insertPosition);
 
 	#ifdef TICTOC_CIRCULAR_ARRAY_DEBUG
 	printDebugInfo(array);
 	#endif
 }
 
-Node* medianNode(CircularOrderedArray* array){
-	return &array->array[array->size/2];
-}
 
-int64_t median(CircularOrderedArray* array){
-	return medianNode(array)->value;
-}

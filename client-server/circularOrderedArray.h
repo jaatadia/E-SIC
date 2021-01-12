@@ -1,26 +1,28 @@
 #ifndef CIRCULAR_ORDERED_ARRAY_H
 #define CIRCULAR_ORDERED_ARRAY_H
 
-#ifndef CIRCULAR_ORDERED_ARRAY_MAX_SIZE
-#define CIRCULAR_ORDERED_ARRAY_MAX_SIZE 600
-#endif
-
 #include <stdint.h>
-#include "circularOrderedArrayNode.h"
+#include <stdlib.h>
 
 struct CircularOrderedArray { 
 	int next;
 	int size;
-	Node array[CIRCULAR_ORDERED_ARRAY_MAX_SIZE];
+
+	void (*cpy)(void*, void*); // copy(soruce, target)
+	int (*cmp)(void*, void*);
+
+	size_t dataSize;
+	int maxSize;
+	int* order;
+	void** data;
 };
 
 typedef struct CircularOrderedArray CircularOrderedArray;
 
-void initCircularOrderedArray(CircularOrderedArray *);
+CircularOrderedArray * initCircularOrderedArray(int maxSize, size_t dataSize, void (*cpy)(void*, void*), int (*cmp)(void*, void*));
+void resetCircularOrderedArray(CircularOrderedArray *);
+void freeCircularOrderedArray(CircularOrderedArray *);
 
-void insertOrdered(CircularOrderedArray *, Node *);
-
-int64_t median(CircularOrderedArray *);
-Node* medianNode(CircularOrderedArray *);
+void insertOrdered(CircularOrderedArray *, void *);
 
 #endif

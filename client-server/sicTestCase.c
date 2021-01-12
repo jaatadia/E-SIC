@@ -66,6 +66,8 @@ void syncStatesTestCase() {
 
 	assert("reSync", sic.state, RE_SYNC);
 	assert("reSync steps", sic.syncSteps, 0);
+
+	sicEnd(&sic);
 }
 
 void syncServerDifFrequency() {
@@ -93,6 +95,7 @@ void syncServerDifFrequency() {
 	int64_t tS_A = sicTime(&sicA, f_multiplier * timeSinceStart + startTimeA);
 	
 	assertInMargin("syncServerDifFrequency", tS_A, tS, 100);
+	sicEnd(&sicA);
 }
 
 
@@ -136,6 +139,9 @@ void parallel() {
 	
 	assertInMargin("Parallel: server time A", tS_A, tS, 100);
 	assertInMargin("Parallel: server time B", tS_B, tS, 100);
+
+	sicEnd(&sicA);
+	sicEnd(&sicB);
 }
 
 void parallelSimulatedVariations() {
@@ -191,6 +197,9 @@ void parallelSimulatedVariations() {
 	
 	assertInMargin("Parallel Variations: server time A", tS_A, tS, 100);
 	assertInMargin("Parallel Variations: server time B", tS_B, tS, 100);
+
+	sicEnd(&sicA);
+	sicEnd(&sicB);
 }
 
 
@@ -205,6 +214,8 @@ void syncNoDifferenceInClocks() {
 	assert("Synced algorithm no difference in clocks actual_m", sic.actual_m, 0);
 	assert("Synced algorithm no difference in clocks actual_c", sic.actual_c, 0);
 	assert("Synced algorithm no difference in clocks", sicTime(&sic, 1000), 1000);
+
+	sicEnd(&sic);
 }
 
 void syncServerInFuture() {
@@ -218,6 +229,8 @@ void syncServerInFuture() {
 	assert("Synced algorithm server in future actual_m", sic.actual_m, 0);
 	assert("Synced algorithm server in future actual_c", sic.actual_c, -1000000);
 	assert("Synced algorithm server in future", sicTime(&sic, 1000), 1001000);
+
+	sicEnd(&sic);
 }
 
 void syncServerInPast() {
@@ -231,6 +244,8 @@ void syncServerInPast() {
 	assert("Synced algorithm server in past actual_m", sic.actual_m, 0);
 	assert("Synced algorithm server in past actual_c", sic.actual_c, +1000000);
 	assert("Synced algorithm server in past", sicTime(&sic, 1000000), 0);
+
+	sicEnd(&sic);
 }
 
 /** input file parsing **/
@@ -444,7 +459,9 @@ void fileTest(){
 	printf("# samples: %ld\n", sizeEstimationsNodeB);
 	printf("MinDif: %ld.\n", minDif);
 	printf("MaxDif: %ld.\n", maxDif);
-    
+
+	sicEnd(&sicA);
+	sicEnd(&sicB);
 }
 
 
@@ -459,7 +476,7 @@ int main(int argc, char** argv){
 	parallel();
 	parallelSimulatedVariations();
 	syncServerDifFrequency();
-	fileTest();
+	//fileTest();
 
 	freeResources();
 

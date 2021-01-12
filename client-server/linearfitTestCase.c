@@ -59,28 +59,11 @@ void linearfitHorizontal(){
 
 	assert("slope horizontal", result.m, 0);
 	assert("intercept horizontal", result.c, 1);
-
-	/*CircularLinearFitArray circularLinearFitArray;
-	initCircularLinearFitArray(&circularLinearFitArray);
-
-	insertPoint(&circularLinearFitArray, 1, 1);
-	insertPoint(&circularLinearFitArray, 2, 1);
-	insertPoint(&circularLinearFitArray, 3, 1);
-	insertPoint(&circularLinearFitArray, 4, 1);
-
-	linearFit(&circularLinearFitArray);
-	assert("Horizontal linearfit slope", circularLinearFitArray.m, 0);
-	assert("Horizontal linearfit intercept", circularLinearFitArray.c, 1);*/
 }
 
 
 
 int main(int argc, char** argv){
-	if (CICRULAR_LINEAR_FIT_ARRAY_MAX_SIZE != 4){
-		printf("Compile this test with -DCICRULAR_LINEAR_FIT_ARRAY_MAX_SIZE=4");	
-		return 1;
-	}
-	
 	correctLinearFit();
 	linearfitHorizontal();
 	
