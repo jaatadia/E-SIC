@@ -8,14 +8,17 @@ cunit.o: cunit.h cunit.c
 	$(COMPILER) -c cunit.c -o cunit.o
 
 
-circularOrderedArray.o: circularOrderedArray.h circularOrderedArray.c
+circularOrderedArrayNode.o: circularOrderedArrayNode.h circularOrderedArrayNode.c
+	$(COMPILER) -c circularOrderedArrayNode.c -o circularOrderedArrayNode.o
+
+circularOrderedArray.o: circularOrderedArrayNode.o circularOrderedArray.h circularOrderedArray.c
 	$(COMPILER) -c circularOrderedArray.c -o circularOrderedArray.o
 
-circularOrderedArrayTest.o: circularOrderedArray.h circularOrderedArray.c
+circularOrderedArrayTest.o: circularOrderedArrayNode.o circularOrderedArray.h circularOrderedArray.c
 	$(COMPILER) -DCIRCULAR_ORDERED_ARRAY_MAX_SIZE=10 -c circularOrderedArray.c -o circularOrderedArrayTest.o
 
-circularOrderedArrayTestCase: circularOrderedArrayTestCase.c circularOrderedArrayTest.o cunit.o
-	$(COMPILER) -DCIRCULAR_ORDERED_ARRAY_MAX_SIZE=10 circularOrderedArrayTestCase.c circularOrderedArrayTest.o cunit.o -o circularOrderedArrayTestCase
+circularOrderedArrayTestCase: circularOrderedArrayTestCase.c circularOrderedArrayNode.o circularOrderedArrayTest.o cunit.o
+	$(COMPILER) -DCIRCULAR_ORDERED_ARRAY_MAX_SIZE=10 circularOrderedArrayTestCase.c circularOrderedArrayNode.o circularOrderedArrayTest.o cunit.o -o circularOrderedArrayTestCase
 
 
 
@@ -39,8 +42,8 @@ halfSampleModeTestCase: halfSampleModeTestCase.c halfSampleMode.o cunit.o
 sic.o: sic.h sic.c
 	$(COMPILER) -c sic.c -o sic.o
 
-sicTestCase: sicTestCase.c sic.o linearfit.o circularOrderedArray.o halfSampleMode.o cunit.o
-	$(COMPILER) sicTestCase.c sic.o linearfit.o circularOrderedArray.o halfSampleMode.o cunit.o -o sicTestCase
+sicTestCase: sicTestCase.c sic.o linearfit.o circularOrderedArrayNode.o circularOrderedArray.o halfSampleMode.o cunit.o
+	$(COMPILER) sicTestCase.c sic.o linearfit.o circularOrderedArrayNode.o circularOrderedArray.o halfSampleMode.o cunit.o -o sicTestCase
 
 
 microtime.o: microtime.h microtime.c
@@ -56,7 +59,7 @@ server: server.c microtime.o
 
 
 update: linearfit.h linearfit.c circularOrderedArray.h circularOrderedArray.c sic.h sic.c microtime.h microtime.c halfSampleMode.h halfSampleMode.c
-	cp linearfit.h linearfit.c circularOrderedArray.h circularOrderedArray.c sic.h sic.c microtime.h microtime.c halfSampleMode.h halfSampleMode.c ../esp32/main/tictoc
+	cp linearfit.h linearfit.c circularOrderedArrayNode.h circularOrderedArrayNode.c circularOrderedArray.h circularOrderedArray.c sic.h sic.c microtime.h microtime.c halfSampleMode.h halfSampleMode.c ../esp32/main/tictoc
 
 compile: client server
 

@@ -13,15 +13,17 @@ int64_t f_order(void * node, int position){
 
 void correctInsertStarting() {
 	printf("---- correctInsertStarting ----\n");	
+	
+	Node node;
 
 	CircularOrderedArray array;
 	initCircularOrderedArray(&array);
-
 	
 	assert("0. size", array.size, 0);
 	assert("0. nextPos", array.next, 0);
-
-	insertOrdered(&array, 2);
+	
+	node.value=2;
+	insertOrdered(&array, &node);
 	int64_t value[] = {2};
 	int64_t order[] = {0};
 	assert("1. size", array.size, 1);
@@ -30,7 +32,8 @@ void correctInsertStarting() {
 	assertPositions("1. order", array.array, f_order, order, 1);
 	assert("1. median", median(&array), 2);
 
-	insertOrdered(&array, 4);
+	node.value=4;
+	insertOrdered(&array, &node);
 	int64_t value2[] = {2, 4};
 	int64_t order2[] = {0, 1};
 	assert("2. size", array.size, 2);
@@ -39,7 +42,8 @@ void correctInsertStarting() {
 	assertPositions("2. order", array.array, f_order, order2, 2);
 	assert("2. median", median(&array), 4);
 
-	insertOrdered(&array, 3);
+	node.value=3;
+	insertOrdered(&array, &node);
 	int64_t value3[] = {2, 3, 4};
 	int64_t order3[] = {0, 2, 1};
 	assert("3. size", array.size, 3);
@@ -48,7 +52,8 @@ void correctInsertStarting() {
 	assertPositions("3. order", array.array, f_order, order3, 3);
 	assert("3. median", median(&array), 3);
 
-	insertOrdered(&array, 0);
+	node.value=0;
+	insertOrdered(&array, &node);
 	int64_t value4[] = {0, 2, 3, 4};
 	int64_t order4[] = {3, 0, 2, 1};
 	assert("4. size", array.size, 4);
@@ -61,10 +66,14 @@ void correctInsertStarting() {
 
 void correctInsertOnceFull() {
 	printf("---- correctInsertOnceFull ----\n");	
+	
+	Node node;
+
 	CircularOrderedArray array;
 	initCircularOrderedArray(&array);
 	for(int i = 0; i< CIRCULAR_ORDERED_ARRAY_MAX_SIZE; i++){
-		insertOrdered(&array, i);
+		node.value=i;
+		insertOrdered(&array, &node);
 	}
 	
 	
@@ -76,7 +85,9 @@ void correctInsertOnceFull() {
 	assertPositions("_0. order", array.array, f_order, order_0, 10);
 	assert("_0. median", median(&array), 5);
 
-	insertOrdered(&array, 2);
+
+	node.value=2;
+	insertOrdered(&array, &node);
 	
 	int64_t value_1[] = {1, 2, 2, 3, 4, 5, 6, 7, 8, 9};
 	int64_t order_1[] = {1, 0, 2, 3, 4, 5, 6, 7, 8, 9};
@@ -86,7 +97,8 @@ void correctInsertOnceFull() {
 	assertPositions("_1. order", array.array, f_order, order_1, 10);
 	assert("_1. median", median(&array), 5);
 
-	insertOrdered(&array, 8);
+	node.value=8;
+	insertOrdered(&array, &node);
 	
 	int64_t value_2[] = {2, 2, 3, 4, 5, 6, 7, 8, 8, 9};
 	int64_t order_2[] = {0, 2, 3, 4, 5, 6, 7, 1, 8, 9};
@@ -96,9 +108,12 @@ void correctInsertOnceFull() {
 	assertPositions("_2. order", array.array, f_order, order_2, 10);
 	assert("_2. median", median(&array), 6);
 
-	insertOrdered(&array, -1);
-	insertOrdered(&array, 1);
-	insertOrdered(&array, 0);
+	node.value=-1;
+	insertOrdered(&array, &node);
+	node.value=1;
+	insertOrdered(&array, &node);
+	node.value=0;
+	insertOrdered(&array, &node);
 	
 	int64_t value_3[] = {-1, 0, 1, 2, 5, 6, 7, 8, 8, 9};
 	int64_t order_3[] = {2, 4, 3, 0, 5, 6, 7, 1, 8, 9};

@@ -81,7 +81,11 @@ void sicStep(SicData* sic, int64_t t1, int64_t t2, int64_t t3, int64_t t4) {
 }
 
 void updateSamples(SicData* sic, int64_t phi, int64_t t){	
-	insertOrderedWithTime(&sic->Wm, phi, t);
+	
+	Node node;
+	node.value = phi;
+	node.time = t;
+	insertOrdered(&sic->Wm, &node);
 
 /*
 	if(sic->state == PRE_SYNC || sic->state == SYNC || sic->syncSteps >= SAMPLES_SIZE){

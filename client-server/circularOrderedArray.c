@@ -11,21 +11,9 @@ void initCircularOrderedArray(CircularOrderedArray * array){
 
 void swap(Node * first, Node * second){
 	Node aux;
-	
-	//aux = first
-	aux.value = first->value;
-	aux.order = first->order;
-	aux.time = first->time;
-	 
-	//first = second 
-	first->value = second->value;
-	first->order = second->order;
-	first->time = second->time;
-
-	//second = aux
-	second->value = aux.value;
-	second->order = aux.order;
-	second->time = aux.time;
+	copyNode(first, &aux); //aux = first	 
+	copyNode(second, first); //first = second 
+	copyNode(&aux, second); //second = aux
 }
 
 int orderRight(Node * array, int position, int size){
@@ -71,7 +59,7 @@ void printDebugInfo(CircularOrderedArray* array){
 	printf("CircularOrderedArray - Next Order to override: %d.\n", array->next);
 }
 
-void insertOrderedWithTime(CircularOrderedArray* array, int64_t value, int64_t time){
+void insertOrdered(CircularOrderedArray* array, Node* node){
 	int insertPosition;
 	if(array->size < CIRCULAR_ORDERED_ARRAY_MAX_SIZE){
 		insertPosition = array->size;
@@ -80,8 +68,7 @@ void insertOrderedWithTime(CircularOrderedArray* array, int64_t value, int64_t t
 		insertPosition = findPosition(array->array, CIRCULAR_ORDERED_ARRAY_MAX_SIZE, array->next) ;
 	}
 
-	array->array[insertPosition].value=value;
-	array->array[insertPosition].time=time;
+	copyNode(node, &array->array[insertPosition]);
 	array->array[insertPosition].order=array->next;
 	array->next = (array->next + 1) % CIRCULAR_ORDERED_ARRAY_MAX_SIZE;
 
@@ -90,10 +77,6 @@ void insertOrderedWithTime(CircularOrderedArray* array, int64_t value, int64_t t
 	#ifdef TICTOC_CIRCULAR_ARRAY_DEBUG
 	printDebugInfo(array);
 	#endif
-}
-
-void insertOrdered(CircularOrderedArray* array, int64_t value){
-	insertOrderedWithTime(array, value, 0);
 }
 
 Node* medianNode(CircularOrderedArray* array){
