@@ -27,7 +27,6 @@ struct SicData {
     int to;
 
     CircularOrderedArray Wm;
-    CircularLinearFitArray Wmode;
 
     double actual_m;
     double actual_c;

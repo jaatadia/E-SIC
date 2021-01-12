@@ -7,8 +7,9 @@
 int SAMPLE_WINDOWS_SIZE = 3;
 int SAMPLE_WINDOWS[] = {300, 150, 75};
 
-void updateSamples(SicData* sic, int64_t phi, int64_t t);
+void updateSamples(SicData* sic, int64_t t1, int64_t t2, int64_t t3, int64_t t4);
 void calculateLinearFit(SicData* sic, LinearFitResult* result);
+
 int64_t getPhi(void * array, int pos);
 double getPhiDouble(void * array, int pos);
 double getTime(void * array, int pos);
@@ -16,7 +17,6 @@ double getTime(void * array, int pos);
 void sicReset(SicData* sic){
 	sic->syncSteps = 0;
 	initCircularOrderedArray(&sic->Wm);
-	initCircularLinearFitArray(&sic->Wmode);
 }
 
 
@@ -48,10 +48,7 @@ void sicStepTimeout(SicData* sic){
 void sicStep(SicData* sic, int64_t t1, int64_t t2, int64_t t3, int64_t t4) {
 	sic->to=0;
 	
-	int64_t phi = t4 - t3 - (t2 - t1 + t4 - t3) / 2.0;
-	int64_t t = t3 + phi;
-
-	updateSamples(sic, phi, t);
+	updateSamples(sic, t1, t2, t3, t4);
 	
 	sic->syncSteps++;
 
@@ -80,8 +77,11 @@ void sicStep(SicData* sic, int64_t t1, int64_t t2, int64_t t3, int64_t t4) {
 	} 
 }
 
-void updateSamples(SicData* sic, int64_t phi, int64_t t){	
+void updateSamples(SicData* sic, int64_t t1, int64_t t2, int64_t t3, int64_t t4){	
 	
+	int64_t phi = t4 - t3 - (t2 - t1 + t4 - t3) / 2.0;
+	int64_t t = t3 + phi;
+
 	Node node;
 	node.value = phi;
 	node.time = t;
@@ -128,7 +128,7 @@ void calculateLinearFit(SicData* sic, LinearFitResult* result){
 	int end = modePosition + SIC_LINEAR_FIT_WINDOW;
 	//if(start < 0) start = 0;
 	//if(end > SAMPLES_SIZE) end = SAMPLES_SIZE;
-	linearFitFunction(&sic->Wm, start, end, getTime, getPhiDouble, result); 
+	linearFit(&sic->Wm, start, end, getTime, getPhiDouble, result); 
 	
 	//printf("\n");
 	//linearFitFunction(&sic->Wm, 0, SAMPLES_SIZE, getTime, getPhiDouble, result); 

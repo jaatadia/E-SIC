@@ -4,28 +4,9 @@
 
 //#define TICTOC_LINEAR_FIT_DEBUG
 
-void initCircularLinearFitArray(CircularLinearFitArray* array){
-	array->nextPos = 0;
-	array->size = 0;
-}
-
-void insertPoint(CircularLinearFitArray* array, int64_t newX, int64_t newY) {
-	#ifdef TICTOC_LINEAR_FIT_DEBUG
-	printf("Linearfit - New point x: %"PRId64" y: %"PRId64".\n", newX, newY);	
-	#endif
-
-	array->array[array->nextPos].x = newX;
-	array->array[array->nextPos].y = newY;
-
-	if(array->size < CICRULAR_LINEAR_FIT_ARRAY_MAX_SIZE) {
-		array->size++;
-	}
-
-	array->nextPos = (array->nextPos + 1) % CICRULAR_LINEAR_FIT_ARRAY_MAX_SIZE;
-}
 
 #include <stdio.h>
-void linearFitFunction(void* array, int start, int end, double(*fx)(void*, int), double(*fy)(void*, int), LinearFitResult* result) {
+void linearFit(void* array, int start, int end, double(*fx)(void*, int), double(*fy)(void*, int), LinearFitResult* result) {
 	int n = end - start;
 	double Sx = 0;
 	double Sy = 0;
@@ -55,25 +36,6 @@ void linearFitFunction(void* array, int start, int end, double(*fx)(void*, int),
 	#endif	
 }	
 
-
-double getX(void* array, int pos) {
-	return ((Point*) array)[pos].x;
-}
-
-double getY(void* array, int pos) {
-	return ((Point*) array)[pos].y;
-}
-
-void linearFitResult(CircularLinearFitArray* array, LinearFitResult * result) {	
-	linearFitFunction(array->array, 0, array->size, getX, getY, result);
-}
-
-void linearFit(CircularLinearFitArray* array) {	
-	LinearFitResult result;
-	linearFitResult(array, &result);
-	array->m = result.m;
-	array->c = result.c;
-}
 
 /*
 	https://www.johndcook.com/blog/2008/10/20/comparing-two-ways-to-fit-a-line-to-data/

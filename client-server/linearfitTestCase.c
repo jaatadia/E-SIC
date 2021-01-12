@@ -2,41 +2,65 @@
 #include "cunit.h"
 #include <stdio.h>
 
+struct TestArray { 
+	int64_t * x;
+	int64_t * y;
+};
+
+typedef struct TestArray TestArray;
+
+double getX(void* array, int position){
+	return ((TestArray*)array)->x[position];
+}
+
+double getY(void* array, int position){
+	return ((TestArray*)array)->y[position];
+}
+
+
 void correctLinearFit(){
 
-	CircularLinearFitArray circularLinearFitArray;
-	initCircularLinearFitArray(&circularLinearFitArray);
+	TestArray testArray;
+	LinearFitResult result;
 
-	insertPoint(&circularLinearFitArray, 1, 1);
-	insertPoint(&circularLinearFitArray, 2, 2);
-	insertPoint(&circularLinearFitArray, 3, 3);
-	linearFit(&circularLinearFitArray);
+	
+	int64_t x[] = {1, 2, 3};
+	int64_t y[] = {1, 2, 3};
+	testArray.x=x;
+	testArray.y=y;
 
-	assert("Partially filled nextPos", circularLinearFitArray.nextPos, 3);
-	// assert("Partially filled Sx", circularLinearFitArray.Sx, 1 + 2 + 3);
-	// assert("Partially filled Sxx", circularLinearFitArray.Sxx, 1*1 + 2*2 + 3*3);
-	// assert("Partially filled Sy", circularLinearFitArray.Sy, 1 + 2 + 3);
-	// assert("Partially filled Sxy", circularLinearFitArray.Sxy, 1*1 + 2*2 + 3*3);
-	assert("Partially filled linearfit slope", circularLinearFitArray.m, 1);
-	assert("Partially filled linearfit intercept", circularLinearFitArray.c, 0);
+	linearFit(&testArray, 0, 3, getX, getY, &result);
 
-	insertPoint(&circularLinearFitArray, 1, 3);
-	insertPoint(&circularLinearFitArray, 2, 5);
-	insertPoint(&circularLinearFitArray, 3, 7);
-	insertPoint(&circularLinearFitArray, 4, 9);
-	linearFit(&circularLinearFitArray);
-	assert("Fully filled nextPos", circularLinearFitArray.nextPos, 3);
-	// assert("Fully filled Sx", circularLinearFitArray.Sx, 1 + 2 + 3 + 4);
-	// assert("Fully filled Sxx", circularLinearFitArray.Sxx, 1*1 + 2*2 + 3*3 + 4*4);
-	// assert("Fully filled Sy", circularLinearFitArray.Sy, 3 + 5 + 7 + 9);
-	// assert("Fully filled Sxy", circularLinearFitArray.Sxy, 1*3 + 2*5 + 3*7 + 4*9);
-	assert("Fully filled linearfit slope", circularLinearFitArray.m, 2);
-	assert("Fully filled linearfit intercept", circularLinearFitArray.c, 1);
+	assert("slope 1", result.m, 1);
+	assert("intercept 1", result.c, 0);
 
+	int64_t x2[] = {1, 2, 3, 4};
+	int64_t y2[] = {3, 5, 7, 9};
+	testArray.x=x2;
+	testArray.y=y2;
+
+	linearFit(&testArray, 0, 4, getX, getY, &result);
+
+	assert("slope 2", result.m, 2);
+	assert("intercept 2", result.c, 1);
 }
 
 void linearfitHorizontal(){
-	CircularLinearFitArray circularLinearFitArray;
+	
+	TestArray testArray;
+	LinearFitResult result;
+
+	int64_t x[] = {1, 2, 3};
+	int64_t y[] = {1, 1, 1};
+	testArray.x=x;
+	testArray.y=y;
+
+	linearFit(&testArray, 0, 3, getX, getY, &result);
+
+	assert("slope horizontal", result.m, 0);
+	assert("intercept horizontal", result.c, 1);
+
+	/*CircularLinearFitArray circularLinearFitArray;
 	initCircularLinearFitArray(&circularLinearFitArray);
 
 	insertPoint(&circularLinearFitArray, 1, 1);
@@ -46,7 +70,7 @@ void linearfitHorizontal(){
 
 	linearFit(&circularLinearFitArray);
 	assert("Horizontal linearfit slope", circularLinearFitArray.m, 0);
-	assert("Horizontal linearfit intercept", circularLinearFitArray.c, 1);
+	assert("Horizontal linearfit intercept", circularLinearFitArray.c, 1);*/
 }
 
 
