@@ -81,7 +81,7 @@ void syncServerDifFrequency() {
 	
 	double f_multiplier = 1 + 0.01;
 
-	for(int i=0; i< 720; i++){
+	for(int i=0; i< 600 + 61 * 60; i++){
 		int64_t timeSinceStart = i*1000000;
 		sicStep(&sicA, 
 			startTimeA + f_multiplier * timeSinceStart , 
@@ -112,7 +112,7 @@ void parallel() {
 	int64_t tAS = 2222;
 	int64_t tBS = 5333;
 	
-	for(int i=0; i< 720; i++){
+	for(long long i=0; i< 60000; i++){
 		int64_t timeSinceStart = i*1000000;
 		sicStep(&sicA, 
 			timeSinceStart + startTimeA, 
@@ -158,7 +158,7 @@ void parallelSimulatedVariations() {
 	int64_t tAS = 2222;
 	int64_t tBS = 5333;
 	
-	for(int i=0; i< 720; i++){
+	for(long long i=0; i< 60000; i++){
 
 		int64_t timeSinceStart = i*1000000 + randSign() * randUpTo(200000);
 
@@ -207,7 +207,7 @@ void syncNoDifferenceInClocks() {
 	SicData sic;
 	sicInit(&sic);
 	
-	for(int i=0; i< 720; i++){
+	for(long long i=0; i< 60000; i++){
 		sicStep(&sic, i*1000000, i*1000000 + 10, i*1000000 + 11, i*1000000 + 21);
 	}
 
@@ -222,7 +222,7 @@ void syncServerInFuture() {
 	SicData sic;
 	sicInit(&sic);
 	
-	for(int i=0; i< 720; i++){
+	for(long long i=0; i< 60000; i++){
 		sicStep(&sic, i*1000000, (i+1)*1000000 + 10, (i+1)*1000000 + 11, i*1000000 + 21);
 	}
 
@@ -237,7 +237,7 @@ void syncServerInPast() {
 	SicData sic;
 	sicInit(&sic);
 	
-	for(int i=0; i< 720; i++){
+	for(long long i=0; i< 60000; i++){
 		sicStep(&sic, i*1000000, (i-1)*1000000 + 10, (i-1)*1000000 + 11, i*1000000 + 21);
 	}
 
@@ -368,10 +368,12 @@ void loadValues(SicData* sic, char* file, int64_t* estimations, int64_t* size){
 		} else if(parsed.type == INTERRUPTION_LINE){
 			//printf("tt_input:%ld tt:%ld \n", parsed.t[0], parsed.t[1]);
 			if(parsed.t[1] != 0) {
-				printf("Iteration %ld - ", (*size));
-				assertInMargin("training assertion", parsed.t[1], sicTime(sic, parsed.t[0]), 100);
-				estimations[(*size)] = parsed.t[1];
-				//estimations[(*size)] = sicTime(sic, parsed.t[0]);
+				//printf("Iteration %ld - ", (*size));
+				//assertInMargin("training assertion", parsed.t[1], sicTime(sic, parsed.t[0]), 100);
+				//estimations[(*size)] = parsed.t[0];
+				//estimations[(*size)] = parsed.t[1];
+				estimations[(*size)] = sicTime(sic, parsed.t[0]);
+				
 				(*size) ++;
 			}
 		} else if(parsed.type == TIMEOUT_LINE){
@@ -446,10 +448,11 @@ void fileTest(){
 	int64_t maxDif = 0;
 	int64_t minDif = LONG_MAX;
 
-	for(int i = 0; i<sizeEstimationsNodeA && i < sizeEstimationsNodeB; i++) {
+	for(int i = 55; i<sizeEstimationsNodeA && i < sizeEstimationsNodeB; i++) {
 		printf("Iteration %d - ", i);
 		assertInMargin("fileTest: timeServer A B ", estimationsNodeA[i], estimationsNodeB[i], 100);	
 		int64_t dif = estimationsNodeA[i] - estimationsNodeB[i];
+		//printf(", %ld", estimationsNodeA[i]);
 		//printf(", %ld", dif);
 		dif = (dif < 0) ? - dif : dif;
 		maxDif = (dif > maxDif) ? dif : maxDif;
@@ -469,12 +472,12 @@ void fileTest(){
 int main(int argc, char** argv){
 	srand(seed);
 
-	syncStatesTestCase();
+	//syncStatesTestCase();
 	syncNoDifferenceInClocks();
 	syncServerInFuture();
 	syncServerInPast();
 	parallel();
-	parallelSimulatedVariations();
+	//parallelSimulatedVariations();
 	syncServerDifFrequency();
 	//fileTest();
 

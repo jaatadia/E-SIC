@@ -12,7 +12,8 @@ void calculateLinearFit(SicData* sic, LinearFitResult* result);
 
 int64_t getPhi(void * array, int pos);
 double getPhiDouble(void * array, int pos);
-double getTime(void * array, int pos);
+int64_t getTime(void * array, int pos);
+double getTimeDouble(void * array, int pos);
 
 
 
@@ -52,6 +53,7 @@ void sicReset(SicData* sic){
 
 void sicInit(SicData* sic) {
 	sic->Wm = initCircularOrderedArray(SAMPLES_SIZE, sizeof(WmNode), cpyWmNode, cmpWmNode);
+	sic->Wmode = initCircularOrderedArray(3*MODE_SAMPLES_SIZE, sizeof(WmNode), cpyWmNode, cmpWmNode);
 	sicReset(sic);
 	sic->state = NO_SYNC;
     sic->actual_m = 0;
@@ -62,6 +64,7 @@ void sicInit(SicData* sic) {
 
 void sicEnd(SicData* sic) {
 	freeCircularOrderedArray(sic->Wm);
+	freeCircularOrderedArray(sic->Wmode);
 }
 
 void sicStepTimeout(SicData* sic){
@@ -86,9 +89,8 @@ void sicStepTimeout(SicData* sic){
 void sicStep(SicData* sic, int64_t t1, int64_t t2, int64_t t3, int64_t t4) {
 	sic->to=0;
 	
-	updateSamples(sic, t1, t2, t3, t4);
-	
 	sic->syncSteps++;
+	updateSamples(sic, t1, t2, t3, t4);
 
 	if ((sic->state == PRE_SYNC || sic->state == SYNC) && sic->syncSteps == P) {
 		LinearFitResult result;
@@ -101,7 +103,7 @@ void sicStep(SicData* sic, int64_t t1, int64_t t2, int64_t t3, int64_t t4) {
 		#ifdef TICTOC_SIC_DEBUG
 		printf("SIC - Entered SYNC state: new m: %f c: %f.\n", sic->actual_m, sic->actual_c);
 		#endif
-	} else if((sic->state == NO_SYNC || sic->state == RE_SYNC) && sic->syncSteps == P + SAMPLES_SIZE) {
+	} else if((sic->state == NO_SYNC || sic->state == RE_SYNC) && sic->syncSteps == P * MODE_SAMPLES_SIZE + SAMPLES_SIZE) {
 		LinearFitResult result;
 		calculateLinearFit(sic, &result);
 
@@ -115,67 +117,32 @@ void sicStep(SicData* sic, int64_t t1, int64_t t2, int64_t t3, int64_t t4) {
 	} 
 }
 
+#include <inttypes.h>	
 void updateSamples(SicData* sic, int64_t t1, int64_t t2, int64_t t3, int64_t t4){	
 	WmNode node;
-	node.phi = t4 - t3 - (t2 - t1 + t4 - t3) / 2.0;
-	node.time = t3 + node.phi;
+	node.phi = (t1 -t2 - t3 + t4) / 2.0;
+	node.time = t1;
 	insertOrdered(sic->Wm, &node);
 
-/*
-	if(sic->state == PRE_SYNC || sic->state == SYNC || sic->syncSteps >= SAMPLES_SIZE){
+	if(((sic->state == NO_SYNC || sic->state == RE_SYNC) && (sic->syncSteps >= SAMPLES_SIZE) && ((sic->syncSteps - SAMPLES_SIZE) % MODE_SAMPLES_SIZE == 0)) ||
+		((sic->state == PRE_SYNC || sic->state == SYNC) && sic->syncSteps == P)) {
 		int modePosition = halfSampleModeWindowedMedianPosition(SAMPLE_WINDOWS, SAMPLE_WINDOWS_SIZE, sic->Wm, 0, SAMPLES_SIZE, getPhi);
-		//int modePosition = halfSampleModePosition(sic->Wm, 0, SAMPLES_SIZE, getPhi);
+		node.phi = getPhi(sic->Wm, modePosition);
+		node.time = getTime(sic->Wm, modePosition);
+		insertOrdered(sic->Wmode, &node);		
 
-		if(modePosition - 1 >= 0) insertPoint(sic->Wmode, sic->Wm.array[modePosition - 1].time, sic->Wm.array[modePosition - 1].value);
-		insertPoint(sic->Wmode, sic->Wm.array[modePosition].time, sic->Wm.array[modePosition].value);
-		if(modePosition + 1 < SAMPLES_SIZE) insertPoint(sic->Wmode, sic->Wm.array[modePosition + 1].time, sic->Wm.array[modePosition + 1].value);
+		node.phi = getPhi(sic->Wm, modePosition-1);
+		node.time = getTime(sic->Wm, modePosition-1);
+		insertOrdered(sic->Wmode, &node);		
+
+		node.phi = getPhi(sic->Wm, modePosition+1);
+		node.time = getTime(sic->Wm, modePosition+1);
+		insertOrdered(sic->Wmode, &node);		
 	}
-*/
-
-	/*	
-	if(sic->state == PRE_SYNC || sic->state == SYNC || sic->syncSteps >= SAMPLES_SIZE){
-		ModeWindow modewindow;
-		LinearFitResult result; 
-		halfSampleModeWindow(SAMPLE_WINDOWS, SAMPLE_WINDOWS_SIZE, sic->Wm, 0, SAMPLES_SIZE, getPhi, &modewindow);
-
-		linearFitFunction(sic->Wm, modewindow.start, modewindow.end, getTime, getPhiDouble, result); 
-	
-		insertPoint(sic->Wmode, sic->Wm.array[modePosition].time, sic->Wm.array[modePosition].value);
-
-	}*/
-
 }
 
 void calculateLinearFit(SicData* sic, LinearFitResult* result){
-	/* 
-	int modePosition = halfSampleModePosition(sic->Wm, 0, SAMPLES_SIZE, getPhi);
-	int start = modePosition - SIC_LINEAR_FIT_WINDOW;
-	int end = modePosition + SIC_LINEAR_FIT_WINDOW;
-	if(start < 0) start = 0;
-	if(end > SAMPLES_SIZE) end = SAMPLES_SIZE;
-	linearFitFunction(sic->Wm, start, end, getTime, getPhiDouble, result); 
-	*/
-
-	
-	int modePosition = halfSampleModeWindowedMedianPosition(SAMPLE_WINDOWS, SAMPLE_WINDOWS_SIZE, sic->Wm, 0, SAMPLES_SIZE, getPhi);
-	int start = modePosition - SIC_LINEAR_FIT_WINDOW;
-	int end = modePosition + SIC_LINEAR_FIT_WINDOW;
-	//if(start < 0) start = 0;
-	//if(end > SAMPLES_SIZE) end = SAMPLES_SIZE;
-	linearFit(sic->Wm, start, end, getTime, getPhiDouble, result); 
-	
-	//printf("\n");
-	//linearFitFunction(sic->Wm, 0, SAMPLES_SIZE, getTime, getPhiDouble, result); 
-
-	//linearFitFunction(sic->Wm, (int) 0.1 * SAMPLES_SIZE, (int) (.9 * SAMPLES_SIZE), getTime, getPhiDouble, result); 
-
-	/*
-	ModeWindow modewindow;
-	halfSampleModeWindow(SAMPLE_WINDOWS, SAMPLE_WINDOWS_SIZE, sic->Wm, 0, SAMPLES_SIZE, getPhi, &modewindow);	
-	linearFitFunction(sic->Wm, modewindow.start, modewindow.end, getTime, getPhiDouble, result); */
-
-	//linearFitResult(sic->Wmode, result);
-
+	linearFit(sic->Wmode, 0, 3*MODE_SAMPLES_SIZE, getTimeDouble, getPhiDouble, result); 
 }
 
 
@@ -187,8 +154,12 @@ double getPhiDouble(void * array, int pos){
 	return getPhi(array, pos);
 }
 
-double getTime(void * array, int pos){
+int64_t getTime(void * array, int pos){
 	return ((WmNode*)((CircularOrderedArray*) array)->data[pos])->time;
+}
+
+double getTimeDouble(void * array, int pos){
+	return getTime(array, pos);
 }
 
 int sicTimeAvailable(SicData* sic){
@@ -196,5 +167,5 @@ int sicTimeAvailable(SicData* sic){
 }
 
 int64_t sicTime(SicData* sic, int64_t systemClock){
-	return systemClock - (systemClock*sic->actual_m + sic->actual_c);
+	return systemClock - (int64_t)(systemClock*sic->actual_m + sic->actual_c);
 }
