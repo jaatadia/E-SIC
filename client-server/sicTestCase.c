@@ -342,7 +342,7 @@ void parseLine(ParsedT * parsed, char* line){
 
 /** en input file parsing **/
 	
-void loadValues(SicData* sic, char* file, int64_t* estimations, int64_t* size){
+void loadValues(SicData* sic, char* file, int64_t* t0, int64_t* estimations, int64_t* size){
 	initRegex();
 	FILE * fp;
     char * line = NULL;
@@ -369,8 +369,8 @@ void loadValues(SicData* sic, char* file, int64_t* estimations, int64_t* size){
 			//printf("tt_input:%ld tt:%ld \n", parsed.t[0], parsed.t[1]);
 			if(parsed.t[1] != 0) {
 				//printf("Iteration %ld - ", (*size));
-				//assertInMargin("training assertion", parsed.t[1], sicTime(sic, parsed.t[0]), 100);
-				//estimations[(*size)] = parsed.t[0];
+				assertInMargin("training assertion", parsed.t[1], sicTime(sic, parsed.t[0]), 100);
+				t0[(*size)] = parsed.t[0];
 				//estimations[(*size)] = parsed.t[1];
 				estimations[(*size)] = sicTime(sic, parsed.t[0]);
 				
@@ -429,13 +429,14 @@ void fileTest(){
 	
 	int64_t sizeEstimationsNodeA;
 	int64_t estimationsNodeA[5000];
+	int64_t t0[5000];
 
 	int64_t sizeEstimationsNodeB;
 	int64_t estimationsNodeB[5000];
 
 
 	printf("\n---------loading1---------.\n");
-	loadValues(&sicA, "./CLIENT_03.txt", estimationsNodeA, &sizeEstimationsNodeA);
+	loadValues(&sicA, "./CLIENT_03.txt", t0, estimationsNodeA, &sizeEstimationsNodeA);
 
 	
 	loadServerValues("./SERVER_03.txt", estimationsNodeB, &sizeEstimationsNodeB);
@@ -448,16 +449,39 @@ void fileTest(){
 	int64_t maxDif = 0;
 	int64_t minDif = LONG_MAX;
 
-	for(int i = 55; i<sizeEstimationsNodeA && i < sizeEstimationsNodeB; i++) {
+	int starting = 305;
+	for(int i = starting; i<sizeEstimationsNodeA && i < sizeEstimationsNodeB; i++) {
 		printf("Iteration %d - ", i);
 		assertInMargin("fileTest: timeServer A B ", estimationsNodeA[i], estimationsNodeB[i], 100);	
 		int64_t dif = estimationsNodeA[i] - estimationsNodeB[i];
-		//printf(", %ld", estimationsNodeA[i]);
-		//printf(", %ld", dif);
 		dif = (dif < 0) ? - dif : dif;
 		maxDif = (dif > maxDif) ? dif : maxDif;
 		minDif = (dif < minDif) ? dif : minDif;
 	}
+
+	printf("\nerror = [");
+	for(int i = starting; i<sizeEstimationsNodeA && i < sizeEstimationsNodeB; i++) {
+		int64_t dif = estimationsNodeA[i] - estimationsNodeB[i];
+		dif = (dif < 0) ? - dif : dif;
+		if(i==starting){
+			printf("%ld", dif);
+		} else {
+			printf(", %ld", dif);
+		}
+	}
+	printf("]\n");
+
+	printf("t = [");
+	for(int i = starting; i<sizeEstimationsNodeA && i < sizeEstimationsNodeB; i++) {
+		if(i==starting){
+			printf("%ld", t0[i]);
+		} else {
+			printf(", %ld", t0[i]);
+		}
+		
+	}
+	printf("]\n");
+
 	printf("\n");
 	printf("# samples: %ld\n", sizeEstimationsNodeB);
 	printf("MinDif: %ld.\n", minDif);
