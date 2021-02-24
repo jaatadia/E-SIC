@@ -447,18 +447,19 @@ void fileTest(){
 */
 	
 	int64_t maxDif = 0;
-	int64_t minDif = LONG_MAX;
+	int64_t minDif = 10000000;
 
-	int starting = 305;
+	int starting = 0;
 	for(int i = starting; i<sizeEstimationsNodeA && i < sizeEstimationsNodeB; i++) {
 		printf("Iteration %d - ", i);
 		assertInMargin("fileTest: timeServer A B ", estimationsNodeA[i], estimationsNodeB[i], 100);	
 		int64_t dif = estimationsNodeA[i] - estimationsNodeB[i];
 		dif = (dif < 0) ? - dif : dif;
-		maxDif = (dif > maxDif) ? dif : maxDif;
-		minDif = (dif < minDif) ? dif : minDif;
+		if(dif > maxDif) maxDif = dif;
+		if(dif < minDif) minDif = dif;
 	}
 
+	/*
 	printf("\nerror = [");
 	for(int i = starting; i<sizeEstimationsNodeA && i < sizeEstimationsNodeB; i++) {
 		int64_t dif = estimationsNodeA[i] - estimationsNodeB[i];
@@ -482,10 +483,11 @@ void fileTest(){
 	}
 	printf("]\n");
 
-	printf("\n");
+	printf("\n");*/
+
 	printf("# samples: %ld\n", sizeEstimationsNodeB);
-	printf("MinDif: %ld.\n", minDif);
-	printf("MaxDif: %ld.\n", maxDif);
+	printf("MinDif: %ld\n", minDif);
+	printf("MaxDif: %ld\n", maxDif);
 
 	sicEnd(&sicA);
 	sicEnd(&sicB);
@@ -496,6 +498,7 @@ void fileTest(){
 int main(int argc, char** argv){
 	srand(seed);
 
+	/*
 	//syncStatesTestCase();
 	syncNoDifferenceInClocks();
 	syncServerInFuture();
@@ -503,7 +506,8 @@ int main(int argc, char** argv){
 	parallel();
 	//parallelSimulatedVariations();
 	syncServerDifFrequency();
-	//fileTest();
+	*/
+	fileTest();
 
 	freeResources();
 

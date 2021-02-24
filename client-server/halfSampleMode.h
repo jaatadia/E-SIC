@@ -3,21 +3,18 @@
 
 #include <stdint.h>
 
-struct ModeWindow {
-	int64_t start;
-	int64_t end;
+struct HalfSampleModeResult {
+	int64_t mode;
+	int position1;
+	int position2;
 };
 
-typedef struct ModeWindow ModeWindow;
+typedef struct HalfSampleModeResult HalfSampleModeResult;
 
-int64_t halfSampleMode(void* array, int start, int end, int64_t(*fx)(void*, int));
-int halfSampleModePosition(void* array, int start, int end, int64_t(*fx)(void*, int));
+void halfSampleMode(void* array, int start, int end, int64_t(*fx)(void*, int), HalfSampleModeResult* result);
 
+void halfSampleModeWindow(void* array, int start, int end, int64_t(*fx)(void*, int), HalfSampleModeResult* result, int windowSize);
 
-
-int halfSampleModeWindowedMedianPosition(int* slidingWindows, int slidingWindowsSize, void* array, int start, int end, int64_t(*fx)(void*, int));
-
-void halfSampleModeWindow(int* slidingWindows, int slidingWindowsSize, void* array, int start, int end, int64_t(*fx)(void*, int), ModeWindow * modeWindow);
 
 
 #endif

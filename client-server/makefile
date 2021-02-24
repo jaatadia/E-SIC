@@ -1,4 +1,4 @@
-COMPILER=gcc #-DDEBUG
+COMPILER=gcc -g #-g for debugging info
 
 target: compile
 

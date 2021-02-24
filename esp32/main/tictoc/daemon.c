@@ -9,6 +9,11 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <stdio.h>
+
+#include <WiFi.h">
+#include "time.h"
+
+
 #include "microtime.h"
 #include "esp_timer.h"
 #include <inttypes.h>
@@ -74,7 +79,7 @@ void provideTimeStamps(void * parameter) {
 	TicTocData* ticTocData = (TicTocData*) parameter;
 
 	int32_t timestamps[2 * 3];
-	size_t incomingSize = sizeof(int32_t) * 2;
+	size_t incomingSize = sizeof(int32_t) * 2 * 3;
 	size_t outGoingSize = sizeof(int32_t) * 2 * 3;
 	
 	struct sockaddr_in cliaddr; 
@@ -117,17 +122,46 @@ void setupServerAddr(struct sockaddr_in * servaddr, const char * serverIp, int s
 	inet_aton(serverIp, &(servaddr->sin_addr.s_addr));
 }
 
+
+int getStamps(int sock, const struct sockaddr * servaddr, size_t servaddrSize, int64_t* resultArray){
+	size_t outGoingSize = sizeof(int32_t) * 2 * 3;
+	size_t incomingSize = sizeof(int32_t) * 2 * 3;
+	int32_t timestamps[2 * 4];
+	int64_t t1 = esp_timer_get_time();
+	encodeEpochInMicros(t1, timestamps, 0);
+
+	//sending t1
+	sendto(sock, (const int32_t *)timestamps, outGoingSize,  0, servaddr, servaddrSize);
+
+	if(recv(sock, (int32_t *)timestamps, incomingSize, MSG_WAITALL) == incomingSize){
+		resultArray[3]=esp_timer_get_time();
+		for(int i = 0; i<3; i++) {
+			resultArray[i]=decodeEpochInMicros(timestamps,2*i);
+		}
+
+		if(resultArray[0]!=t1){
+			//receive old package discard it, and wait for the current one, that we discard due to contamination caused by the old package
+			recv(sock, (int32_t *)timestamps, incomingSize, MSG_WAITALL);
+			return 0;
+		}
+		return 1;
+	} else {
+		return 0;
+	}
+}
+
+
+
 void getTimeStamps(void * parameter){
 		int64_t loopCount = 0;
 		TicTocData* ticTocData = (TicTocData*) parameter;
-		int64_t resultArray[4];
-		int32_t timestamps[2 * 4];
+
+		/*
 		struct sockaddr_in servaddr;
 		setupServerAddr(&servaddr, ticTocData->serverIp, ticTocData->serverPort);
-
-		size_t outGoingSize = sizeof(int32_t) * 2;
-		size_t incomingSize = sizeof(int32_t) * 2 * 3;
 		socklen_t servaddrSize = sizeof(servaddr);
+
+		int64_t resultArray[4];
 
 		for(;;) {
 			loopCount++;
@@ -141,34 +175,14 @@ void getTimeStamps(void * parameter){
 			}	
 			#endif
 
-			//printRemainingStack("TicTocDaemon - Start Loop");
-			int64_t t1 = esp_timer_get_time();
-			encodeEpochInMicros(t1, timestamps, 0);
-
-			//sending t1
-			sendto(ticTocData->sock, (const int32_t *)timestamps, outGoingSize,  0, (const struct sockaddr *) &servaddr, servaddrSize);
-
-			if(recv(ticTocData->sock, (int32_t *)timestamps, incomingSize, MSG_WAITALL) == incomingSize){
-				resultArray[3]=esp_timer_get_time();
-				for(int i = 0; i<3; i++) {
-					resultArray[i]=decodeEpochInMicros(timestamps,2*i);
-				}
-
-				if(resultArray[0]!=t1){
-					//receive old package discard it, and wait for the current one, that we discard due to contamination caused by the old package
-					#ifdef TICTOC_DAEMON_DEBUG
-					printf("TicTocDaemon timeout - old package\n");
-					#endif	
-					recv(ticTocData->sock, (int32_t *)timestamps, incomingSize, MSG_WAITALL);
-
-				} else if (loopCount > 10) {
+			if(getStamps(ticTocData->sock, (const struct sockaddr *) &servaddr, servaddrSize, resultArray)){
+				if (loopCount > 10) {
 					#ifdef TICTOC_DAEMON_DEBUG
 					printf("TicTocDaemon %lld - t1:%"PRId64" t2:%"PRId64" t3:%"PRId64" t4:%"PRId64"\n", loopCount, resultArray[0], resultArray[1], resultArray[2], resultArray[3]);
 					#endif
 					sicStep(&ticTocData->sicdata, resultArray[0], resultArray[1], resultArray[2], resultArray[3]);	
 				}
 
-				
 			} else {
 				#ifdef TICTOC_DAEMON_DEBUG
 				printf("TicTocDaemon timeout\n");
@@ -179,11 +193,20 @@ void getTimeStamps(void * parameter){
 			// Pause the task for TIC_TOC_PERIOD ms
 			vTaskDelay(TIC_TOC_PERIOD / portTICK_PERIOD_MS);
 		}
+		*/
+		for(;;){
+			if(*(ticTocData->timeRequest) != -1) {
+				printf("TicTocDaemon - timeRequested:%"PRId64" .\n", *(ticTocData->timeRequest));
+				*(ticTocData->timeRequest) = -1;
+			}
+
+
+			vTaskDelay(TIC_TOC_PERIOD / portTICK_PERIOD_MS);
+		}
 }
 
 void setupTicToc(TicTocData* ticToc, const char * serverIp, int serverPort)
 {
-	
 	#ifndef DAEMON_SERVER
 	sicInit(&ticToc->sicdata);
 	
@@ -204,6 +227,12 @@ void setupTicToc(TicTocData* ticToc, const char * serverIp, int serverPort)
 	ticToc->serverIp = serverIp;
 	ticToc->serverPort = serverPort;
 	#endif
+
+	const char* ntpServer = "pool.ntp.org";
+	const long  gmtOffset_sec = 0;
+	const int   daylightOffset_sec = 3600;
+
+	configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
 
 	xTaskCreatePinnedToCore(
 		// Function that should be called
