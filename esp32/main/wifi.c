@@ -23,7 +23,7 @@
    the config you want - ie #define EXAMPLE_WIFI_SSID "mywifissid"
 */
 #define EXAMPLE_ESP_WIFI_SSID "Atlas"
-#define EXAMPLE_ESP_WIFI_PASS "****"
+#define EXAMPLE_ESP_WIFI_PASS "*****"
 #define EXAMPLE_ESP_MAXIMUM_RETRY  10
 
 /* FreeRTOS event group to signal when we are connected*/

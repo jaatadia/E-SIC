@@ -142,27 +142,29 @@ void printSamples(void* elem){
 void updateSamples(SicData* sic, int64_t t1, int64_t t2, int64_t t3, int64_t t4){	
 	WmNode node;
 	
-	//node.phi = (t1-t2-t3+t4)/2;
+	node.phi = (t1-t2-t3+t4)/2;
 	//node.phi = t1-t2;
 	//node.phi = t4-t3;
 
 
-	//node.cmp = (t1-t2-t3+t4)/2;
+	node.cmp = (t1-t2-t3+t4)/2;
 	//node.cmp = t1-t2;
 	//node.cmp = t4-t3;
 
 
 	//node.time = t4;
 
-	node.cmp = t1-t2;
-	node.phi = t1-t2;
+	//node.cmp = t1-t2;
+	//node.phi = t1-t2;
 	node.time = t1;
 	insertOrdered(sic->Wm, &node);
 
+	/*
 	node.cmp = t4-t3;
 	node.phi = t4-t3;
 	node.time = t4;
 	insertOrdered(sic->Wm2, &node);
+*/
 
 	//lastPos = -1;
 	//foreach(sic->Wm, printSamples);
@@ -186,15 +188,15 @@ void calculateLinearFit(SicData* sic){
 	LinearFitResult result;
 	HalfSampleModeResult hsmResult;
 	
-	LinearFitResult result2;
-	HalfSampleModeResult hsmResult2;
+//	LinearFitResult result2;
+//	HalfSampleModeResult hsmResult2;
 	
 	halfSampleModeWindow(sic->Wm, 0, sic->Wm->size, getCmp, &hsmResult, SIC_LINEAR_FIT_WINDOW);
 	linearFit(sic->Wm, hsmResult.position1, hsmResult.position2, getTimeDouble, getPhiDouble, &result); 
 
 
-	halfSampleModeWindow(sic->Wm2, 0, sic->Wm2->size, getCmp, &hsmResult2, SIC_LINEAR_FIT_WINDOW);
-	linearFit(sic->Wm2, hsmResult2.position1, hsmResult2.position2, getTimeDouble, getPhiDouble, &result2); 
+//	halfSampleModeWindow(sic->Wm2, 0, sic->Wm2->size, getCmp, &hsmResult2, SIC_LINEAR_FIT_WINDOW);
+//	linearFit(sic->Wm2, hsmResult2.position1, hsmResult2.position2, getTimeDouble, getPhiDouble, &result2); 
 
 	/*
 	halfSampleMode(sic->Wm, 0, sic->Wm->size, getCmp, &hsmResult);
@@ -210,8 +212,8 @@ void calculateLinearFit(SicData* sic){
 	sic->actual_m = result.m;
 	sic->actual_c = result.c;
 
-	sic->actual_m2 = result2.m;
-	sic->actual_c2 = result2.c;
+//	sic->actual_m2 = result2.m;
+//	sic->actual_c2 = result2.c;
 }
 
 int sicTimeAvailable(SicData* sic){
@@ -219,11 +221,11 @@ int sicTimeAvailable(SicData* sic){
 }
 
 int64_t computePhi(SicData* sic, int64_t systemClock){
-	//return (int64_t)(systemClock*sic->actual_m + sic->actual_c);
+	return (int64_t)(systemClock*sic->actual_m + sic->actual_c);
 	//return sic->phi;
 	
-	double n = 0.7;
-	return (n*(systemClock*sic->actual_m + sic->actual_c) + (systemClock*sic->actual_m2 + sic->actual_c2))/(1+n);
+	//double n = 1;
+	//return (n*(systemClock*sic->actual_m + sic->actual_c) + (systemClock*sic->actual_m2 + sic->actual_c2))/(1+n);
 }
 
 int64_t sicTime(SicData* sic, int64_t systemClock){

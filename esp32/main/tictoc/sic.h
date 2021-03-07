@@ -8,6 +8,7 @@
 
 //With the new implementation, indicate where to start and stop 
 #define SAMPLES_SIZE 600
+#define MODE_SAMPLES_SIZE 20 
 #define SIC_LINEAR_FIT_WINDOW 30
 
 #define P 60
@@ -27,9 +28,16 @@ struct SicData {
     int to;
 
     CircularOrderedArray* Wm;
+    CircularOrderedArray* Wm2;
+    CircularOrderedArray* Wmode;
 
     double actual_m;
     double actual_c;
+
+    double actual_m2;
+    double actual_c2;
+
+    double phi;
 };
 
 typedef struct SicData SicData;

@@ -54,23 +54,12 @@ void app_main(void)
 	int64_t* timeRequest = malloc(sizeof(int64_t));
 	*timeRequest = -1;
 	TicTocData* ticTocData = malloc(sizeof(TicTocData));
-	setupTicToc(ticTocData, TICTOC_SERVER, TICTOC_PORT);
 	ticTocData->timeRequest = timeRequest;
 
     setup_int_ext(timeRequest);
+    setupTicToc(ticTocData, TICTOC_SERVER, TICTOC_PORT);
 
     for(;;){
     	vTaskDelay(10000 / portTICK_PERIOD_MS);
-    	/*
-    	char ticToctimestamp[64];
-    	char timestamp[64];
-		microsToTimestamp(esp_timer_get_time(), timestamp);
-    	if(!ticTocReady(ticTocData)) {
-    		printf("Waiting for ticTocTo be ready. (systemTime: %s)\n", timestamp);
-    	} else {
-			int64_t ttTime = ticTocTime(ticTocData);
-			microsToTimestamp(ttTime, ticToctimestamp);
-			printf("TicTocTime %s (%lld) (systemTime: %s)\n",ticToctimestamp,  ttTime, timestamp);
-    	}*/
     }
 }

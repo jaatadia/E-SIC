@@ -10,7 +10,6 @@
 #include <netinet/in.h>
 #include <stdio.h>
 
-#include <WiFi.h">
 #include "time.h"
 
 
@@ -156,7 +155,7 @@ void getTimeStamps(void * parameter){
 		int64_t loopCount = 0;
 		TicTocData* ticTocData = (TicTocData*) parameter;
 
-		/*
+
 		struct sockaddr_in servaddr;
 		setupServerAddr(&servaddr, ticTocData->serverIp, ticTocData->serverPort);
 		socklen_t servaddrSize = sizeof(servaddr);
@@ -193,8 +192,8 @@ void getTimeStamps(void * parameter){
 			// Pause the task for TIC_TOC_PERIOD ms
 			vTaskDelay(TIC_TOC_PERIOD / portTICK_PERIOD_MS);
 		}
-		*/
-		for(;;){
+
+		/*for(;;){
 			if(*(ticTocData->timeRequest) != -1) {
 				printf("TicTocDaemon - timeRequested:%"PRId64" .\n", *(ticTocData->timeRequest));
 				*(ticTocData->timeRequest) = -1;
@@ -202,7 +201,7 @@ void getTimeStamps(void * parameter){
 
 
 			vTaskDelay(TIC_TOC_PERIOD / portTICK_PERIOD_MS);
-		}
+		}*/
 }
 
 void setupTicToc(TicTocData* ticToc, const char * serverIp, int serverPort)
@@ -227,12 +226,6 @@ void setupTicToc(TicTocData* ticToc, const char * serverIp, int serverPort)
 	ticToc->serverIp = serverIp;
 	ticToc->serverPort = serverPort;
 	#endif
-
-	const char* ntpServer = "pool.ntp.org";
-	const long  gmtOffset_sec = 0;
-	const int   daylightOffset_sec = 3600;
-
-	configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
 
 	xTaskCreatePinnedToCore(
 		// Function that should be called

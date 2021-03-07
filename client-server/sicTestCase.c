@@ -369,10 +369,10 @@ void loadValues(SicData* sic, char* file, int64_t* t0, int64_t* estimations, int
 			//printf("tt_input:%ld tt:%ld \n", parsed.t[0], parsed.t[1]);
 			if(parsed.t[1] != 0) {
 				//printf("Iteration %ld - ", (*size));
-				assertInMargin("training assertion", parsed.t[1], sicTime(sic, parsed.t[0]), 100);
+				//assertInMargin("training assertion", parsed.t[1], sicTime(sic, parsed.t[0]), 100);
 				t0[(*size)] = parsed.t[0];
-				//estimations[(*size)] = parsed.t[1];
-				estimations[(*size)] = sicTime(sic, parsed.t[0]);
+				estimations[(*size)] = parsed.t[1];
+				//estimations[(*size)] = sicTime(sic, parsed.t[0]);
 				
 				(*size) ++;
 			}
@@ -420,74 +420,72 @@ void loadServerValues(char* file, int64_t* estimations, int64_t* size){
 	free(line);
 }
 
+void printArray(FILE * f, char* name, int64_t* values, int64_t size){
+	fprintf(f, "%s = [", name);
+	fprintf(f, "%ld", values[0]);
+	for(int i = 1; i<size; i++) {
+		fprintf(f, ", %ld", values[i]);
+	}
+	fprintf(f, "]\n");
+}
+
+
 void fileTest(){
 	SicData sicA;
 	SicData sicB;
 	sicInit(&sicA);
 	sicInit(&sicB);
 
-	
+	int64_t sizeServerT;
+	int64_t serverT[50000];
+
 	int64_t sizeEstimationsNodeA;
-	int64_t estimationsNodeA[5000];
-	int64_t t0[5000];
+	int64_t estimationsNodeA[50000];
+	int64_t t0A[50000];
 
 	int64_t sizeEstimationsNodeB;
-	int64_t estimationsNodeB[5000];
+	int64_t estimationsNodeB[50000];
+	int64_t t0B[50000];
 
 
 	printf("\n---------loading1---------.\n");
-	loadValues(&sicA, "./CLIENT_03.txt", t0, estimationsNodeA, &sizeEstimationsNodeA);
+	loadServerValues("./samples/ESP1.txt", serverT, &sizeServerT);
+	loadValues(&sicA, "./samples/ESP2.txt", t0A, estimationsNodeA, &sizeEstimationsNodeA);
+	loadValues(&sicB, "./samples/ESP3.txt", t0B, estimationsNodeB, &sizeEstimationsNodeB);
 
-	
-	loadServerValues("./SERVER_03.txt", estimationsNodeB, &sizeEstimationsNodeB);
+	int64_t size = sizeServerT;
+	if(sizeEstimationsNodeA < size) size = sizeEstimationsNodeA;
+	if(sizeEstimationsNodeB < size) size = sizeEstimationsNodeB;
 
-/*
-	printf("\n---------loading2---------.\n");
-	loadValues(&sicB, "./ESP2.txt", estimationsNodeB, &sizeEstimationsNodeB);
-*/
 	
 	int64_t maxDif = 0;
 	int64_t minDif = 10000000;
 
 	int starting = 0;
-	for(int i = starting; i<sizeEstimationsNodeA && i < sizeEstimationsNodeB; i++) {
+	for(int i = starting; i<size; i++) {
 		printf("Iteration %d - ", i);
-		assertInMargin("fileTest: timeServer A B ", estimationsNodeA[i], estimationsNodeB[i], 100);	
-		int64_t dif = estimationsNodeA[i] - estimationsNodeB[i];
+		assertInMargin("fileTest: timeServer A B ", estimationsNodeB[i], serverT[i], 100);	
+		int64_t dif = estimationsNodeB[i] - serverT[i];
 		dif = (dif < 0) ? - dif : dif;
 		if(dif > maxDif) maxDif = dif;
 		if(dif < minDif) minDif = dif;
 	}
 
-	/*
-	printf("\nerror = [");
-	for(int i = starting; i<sizeEstimationsNodeA && i < sizeEstimationsNodeB; i++) {
-		int64_t dif = estimationsNodeA[i] - estimationsNodeB[i];
-		dif = (dif < 0) ? - dif : dif;
-		if(i==starting){
-			printf("%ld", dif);
-		} else {
-			printf(", %ld", dif);
-		}
-	}
-	printf("]\n");
-
-	printf("t = [");
-	for(int i = starting; i<sizeEstimationsNodeA && i < sizeEstimationsNodeB; i++) {
-		if(i==starting){
-			printf("%ld", t0[i]);
-		} else {
-			printf(", %ld", t0[i]);
-		}
-		
-	}
-	printf("]\n");
-
-	printf("\n");*/
-
 	printf("# samples: %ld\n", sizeEstimationsNodeB);
 	printf("MinDif: %ld\n", minDif);
 	printf("MaxDif: %ld\n", maxDif);
+
+
+
+	FILE* f = fopen("values.py", "w");
+
+	printArray(f, "serverTime", serverT, size);
+	printArray(f, "t0A", t0A, size);
+	printArray(f, "estimationA", estimationsNodeA, size);
+	printArray(f, "t0B", t0B, size);
+	printArray(f, "estimationB", estimationsNodeB, size);
+
+	fclose(f);
 
 	sicEnd(&sicA);
 	sicEnd(&sicB);
