@@ -371,8 +371,8 @@ void loadValues(SicData* sic, char* file, int64_t* t0, int64_t* estimations, int
 				//printf("Iteration %ld - ", (*size));
 				//assertInMargin("training assertion", parsed.t[1], sicTime(sic, parsed.t[0]), 100);
 				t0[(*size)] = parsed.t[0];
-				estimations[(*size)] = parsed.t[1];
-				//estimations[(*size)] = sicTime(sic, parsed.t[0]);
+				//estimations[(*size)] = parsed.t[1];
+				estimations[(*size)] = sicTime(sic, parsed.t[0]);
 				
 				(*size) ++;
 			}
@@ -464,8 +464,8 @@ void fileTest(){
 	int starting = 0;
 	for(int i = starting; i<size; i++) {
 		printf("Iteration %d - ", i);
-		assertInMargin("fileTest: timeServer A B ", estimationsNodeB[i], serverT[i], 100);	
-		int64_t dif = estimationsNodeB[i] - serverT[i];
+		assertInMargin("fileTest: timeServer A B ", estimationsNodeA[i], serverT[i], 100);	
+		int64_t dif = estimationsNodeA[i] - serverT[i];
 		dif = (dif < 0) ? - dif : dif;
 		if(dif > maxDif) maxDif = dif;
 		if(dif < minDif) minDif = dif;

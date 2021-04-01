@@ -75,6 +75,7 @@ void sicInit(SicData* sic) {
 	sic->state = NO_SYNC;
     sic->actual_m = 0;
     sic->actual_c = 0;	
+    sic->lastN = 10;
 }
 
 
@@ -142,12 +143,33 @@ void printSamples(void* elem){
 void updateSamples(SicData* sic, int64_t t1, int64_t t2, int64_t t3, int64_t t4){	
 	WmNode node;
 	
-	node.phi = (t1-t2-t3+t4)/2;
+	node.phi = (t1 - t2 - sic->lastN * t3 + sic->lastN *t4)/(sic->lastN+1);		
+	node.cmp = node.phi;
+	node.time = t1;
+		
+	//sic->lastN = (node.phi - t1 + t2)/(t4-t3 + node.phi);
+	
+	insertOrdered(sic->Wm, &node);
+
+	HalfSampleModeResult hsmResult;
+	if(sic->syncSteps % P == 0){
+		halfSampleModeWindow(sic->Wm, 0, sic->Wm->size, getCmp, &hsmResult, SIC_LINEAR_FIT_WINDOW);
+
+		for(int i=hsmResult.position1; i<hsmResult.position2; i++){
+			WmNode node;	
+			node.phi = getPhi(sic->Wm, i);
+			node.cmp = getCmp(sic->Wm, i);
+			node.time = getTime(sic->Wm, i);
+			insertOrdered(sic->Wmode, &node);
+		}
+	}
+
+	//node.phi = (t1-t2-t3+t4)/2;
 	//node.phi = t1-t2;
 	//node.phi = t4-t3;
 
 
-	node.cmp = (t1-t2-t3+t4)/2;
+	//node.cmp = (t1-t2-t3+t4)/2;
 	//node.cmp = t1-t2;
 	//node.cmp = t4-t3;
 
@@ -156,8 +178,8 @@ void updateSamples(SicData* sic, int64_t t1, int64_t t2, int64_t t3, int64_t t4)
 
 	//node.cmp = t1-t2;
 	//node.phi = t1-t2;
-	node.time = t1;
-	insertOrdered(sic->Wm, &node);
+	//node.time = t1;
+	//insertOrdered(sic->Wm, &node);
 
 	/*
 	node.cmp = t4-t3;
@@ -186,13 +208,22 @@ void updateSamples(SicData* sic, int64_t t1, int64_t t2, int64_t t3, int64_t t4)
 
 void calculateLinearFit(SicData* sic){
 	LinearFitResult result;
-	HalfSampleModeResult hsmResult;
+	//HalfSampleModeResult hsmResult;
 	
 //	LinearFitResult result2;
 //	HalfSampleModeResult hsmResult2;
 	
-	halfSampleModeWindow(sic->Wm, 0, sic->Wm->size, getCmp, &hsmResult, SIC_LINEAR_FIT_WINDOW);
-	linearFit(sic->Wm, hsmResult.position1, hsmResult.position2, getTimeDouble, getPhiDouble, &result); 
+/*	halfSampleModeWindow(sic->Wm, 0, sic->Wm->size, getCmp, &hsmResult, SIC_LINEAR_FIT_WINDOW);
+
+	for(int i=hsmResult.position1; i<hsmResult.position2; i++){
+			WmNode node;	
+			node.phi = getPhi(sic->Wm, i);
+			node.cmp = getCmp(sic->Wm, i);
+			node.time = getTime(sic->Wm, i);
+			insertOrdered(sic->Wmode, &node);
+	}
+*/
+	linearFit(sic->Wmode, 0, sic->Wmode->size, getTimeDouble, getPhiDouble, &result); 
 
 
 //	halfSampleModeWindow(sic->Wm2, 0, sic->Wm2->size, getCmp, &hsmResult2, SIC_LINEAR_FIT_WINDOW);
