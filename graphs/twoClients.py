@@ -82,8 +82,12 @@ plt.close()
 plt.figure('Phi', figsize=(10,10)) 
 plt.title('Phi Error')
 
-plt.plot(serverTime, [abs(b - a) for a,b in zip(estimationA, serverTime)], "r-", label="Node 1")
-plt.plot(serverTime, [abs(b - a) for a,b in zip(estimationB, serverTime)], "c-", label="Node 2")
+
+error1 = [abs(b - a) for a,b in zip(estimationA, serverTime)]
+error2 = [abs(b - a) for a,b in zip(estimationB, serverTime)]
+
+plt.plot(serverTime, error1, "r-", label="Node 1")
+plt.plot(serverTime, error2, "c-", label="Node 2")
 
 plt.xlabel('ServerTime (microsends)')
 plt.ylabel('Phi Error (microsends)')
@@ -92,3 +96,31 @@ plt.legend()
 plt.savefig('twoClients-Error.png')
 plt.close()
 
+print("Node1:") 
+print("\tMin Error: " + str(min(error1)))
+print("\tMax Error: " + str(max(error1)))
+
+print("Node2:") 
+print("\tMin Error: " + str(min(error2)))
+print("\tMax Error: " + str(max(error2)))
+
+# -----------------------------------
+# 			Time
+# -----------------------------------
+
+plt.figure('Time', figsize=(10,10)) 
+plt.title('Time')
+
+
+plt.plot(range(0,len(serverTime)), serverTime, "k-", label="Server time")
+plt.plot(range(0,len(serverTime)), t0A, "r-", label="Node 1 time")
+plt.plot(range(0,len(serverTime)), t0B, "g-", label="Node 2 time")
+
+plt.xlabel('# of Interuption')
+plt.ylabel('Time (microsends)')
+
+axes = plt.gca()
+
+plt.legend()
+plt.savefig('twoClients-times.png')
+plt.close()

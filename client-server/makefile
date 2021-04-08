@@ -12,7 +12,7 @@ circularOrderedArray.o: circularOrderedArray.h circularOrderedArray.c
 	$(COMPILER) -c circularOrderedArray.c -o circularOrderedArray.o
 
 circularOrderedArrayTestCase: circularOrderedArrayTestCase.c circularOrderedArray.o cunit.o
-	$(COMPILER) -DCIRCULAR_ORDERED_ARRAY_MAX_SIZE=10 circularOrderedArrayTestCase.c circularOrderedArray.o cunit.o -o circularOrderedArrayTestCase
+	$(COMPILER) circularOrderedArrayTestCase.c circularOrderedArray.o cunit.o -o circularOrderedArrayTestCase
 
 
 linearfit.o: linearfit.h linearfit.c

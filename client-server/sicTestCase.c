@@ -342,12 +342,15 @@ void parseLine(ParsedT * parsed, char* line){
 
 /** en input file parsing **/
 	
-void loadValues(SicData* sic, char* file, int64_t* t0, int64_t* estimations, int64_t* size){
+void loadValues(SicData* sic, char* file, int64_t* t0, int64_t* estimations, int64_t* size, int64_t* serverInterruptions){
 	initRegex();
 	FILE * fp;
     char * line = NULL;
     size_t len = 0;
     ssize_t read;
+
+	double lastRealPhiFound = 0;
+    int64_t lastRealPhi = 0;
 
     (*size) = 0;
 
@@ -364,6 +367,9 @@ void loadValues(SicData* sic, char* file, int64_t* t0, int64_t* estimations, int
 			sicStep(sic, parsed.t[0], parsed.t[1], parsed.t[2], parsed.t[3]);	
 			//printf(", %ld", parsed.t[3] - parsed.t[0]);
 			//printf("RTT %d: %ld.\n", rtt, parsed.t[3] - parsed.t[0]);
+			if(lastRealPhiFound){
+				printf("n = %f ", (lastRealPhiFound + (double)parsed.t[0] - (double)parsed.t[1])/(-lastRealPhiFound - (double)parsed.t[2] + (double)parsed.t[3]));
+			}
 			rtt++;
 		} else if(parsed.type == INTERRUPTION_LINE){
 			//printf("tt_input:%ld tt:%ld \n", parsed.t[0], parsed.t[1]);
@@ -373,7 +379,8 @@ void loadValues(SicData* sic, char* file, int64_t* t0, int64_t* estimations, int
 				t0[(*size)] = parsed.t[0];
 				//estimations[(*size)] = parsed.t[1];
 				estimations[(*size)] = sicTime(sic, parsed.t[0]);
-				
+				lastRealPhi = parsed.t[0] - serverInterruptions[(*size)];
+				lastRealPhiFound = 1;
 				(*size) ++;
 			}
 		} else if(parsed.type == TIMEOUT_LINE){
@@ -395,7 +402,7 @@ void parseServerLine(ParsedT * parsed, char* line) {
 	}
 }
 
-void loadServerValues(char* file, int64_t* estimations, int64_t* size){
+void loadServerValues(char* file, int64_t* interruptions, int64_t* size){
 	initRegex();
 	FILE * fp;
     char * line = NULL;
@@ -411,7 +418,7 @@ void loadServerValues(char* file, int64_t* estimations, int64_t* size){
         //printf("line: %s", line);
         parseServerLine(&parsed, line);
 		if(parsed.type == INTERRUPTION_LINE){
-			estimations[(*size)] = parsed.t[0];
+			interruptions[(*size)] = parsed.t[0];
 			(*size) ++;
 		}
 
@@ -449,13 +456,14 @@ void fileTest(){
 
 
 	printf("\n---------loading1---------.\n");
-	loadServerValues("./samples/ESP1.txt", serverT, &sizeServerT);
-	loadValues(&sicA, "./samples/ESP2.txt", t0A, estimationsNodeA, &sizeEstimationsNodeA);
-	loadValues(&sicB, "./samples/ESP3.txt", t0B, estimationsNodeB, &sizeEstimationsNodeB);
-
+	loadServerValues("./samples/04_07/ESP_SERVER.txt", serverT, &sizeServerT);
 	int64_t size = sizeServerT;
+	
+	loadValues(&sicA, "./samples/04_07/ESP_CLIENT.txt", t0A, estimationsNodeA, &sizeEstimationsNodeA, serverT);
 	if(sizeEstimationsNodeA < size) size = sizeEstimationsNodeA;
-	if(sizeEstimationsNodeB < size) size = sizeEstimationsNodeB;
+	
+	//loadValues(&sicB, "./samples/ESP3.txt", t0B, estimationsNodeB, &sizeEstimationsNodeB);
+	//if(sizeEstimationsNodeB < size) size = sizeEstimationsNodeB;
 
 	
 	int64_t maxDif = 0;
@@ -471,7 +479,7 @@ void fileTest(){
 		if(dif < minDif) minDif = dif;
 	}
 
-	printf("# samples: %ld\n", sizeEstimationsNodeB);
+	printf("# samples: %ld\n", sizeEstimationsNodeA);
 	printf("MinDif: %ld\n", minDif);
 	printf("MaxDif: %ld\n", maxDif);
 
@@ -482,8 +490,8 @@ void fileTest(){
 	printArray(f, "serverTime", serverT, size);
 	printArray(f, "t0A", t0A, size);
 	printArray(f, "estimationA", estimationsNodeA, size);
-	printArray(f, "t0B", t0B, size);
-	printArray(f, "estimationB", estimationsNodeB, size);
+	//printArray(f, "t0B", t0B, size);
+	//printArray(f, "estimationB", estimationsNodeB, size);
 
 	fclose(f);
 

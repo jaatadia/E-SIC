@@ -14,10 +14,9 @@ void cpy(void * source, void * target){
 	*((int*)target) = *((int*)source);
 }
 
-int cmp(void * first, void * second){
+double cmp(void * first, void * second){
 	return *((int*)first) - *((int*)second);
 }
-
 
 void correctInsertStarting() {
 	printf("---- correctInsertStarting ----\n");	

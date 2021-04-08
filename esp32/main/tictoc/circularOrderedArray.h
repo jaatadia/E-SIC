@@ -9,7 +9,7 @@ struct CircularOrderedArray {
 	int size;
 
 	void (*cpy)(void*, void*); // copy(soruce, target)
-	int64_t (*cmp)(void*, void*);
+	double (*cmp)(void*, void*);
 
 	size_t dataSize;
 	int maxSize;
@@ -19,7 +19,7 @@ struct CircularOrderedArray {
 
 typedef struct CircularOrderedArray CircularOrderedArray;
 
-CircularOrderedArray * initCircularOrderedArray(int maxSize, size_t dataSize, void (*cpy)(void*, void*), int64_t (*cmp)(void*, void*));
+CircularOrderedArray * initCircularOrderedArray(int maxSize, size_t dataSize, void (*cpy)(void*, void*), double (*cmp)(void*, void*));
 void resetCircularOrderedArray(CircularOrderedArray *);
 void freeCircularOrderedArray(CircularOrderedArray *);
 

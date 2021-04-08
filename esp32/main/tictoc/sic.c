@@ -33,10 +33,10 @@ void cpyWmNode(void * source, void * target){
 	targetWmNode->time = sourceWmNode->time;
 }
 
-int64_t cmpWmNode(void * first, void * second){
+double cmpWmNode(void * first, void * second){
 	WmNode* firstWmNode = (WmNode*) first;
 	WmNode* secondWmNode = (WmNode*) second;
-	return firstWmNode->cmp - secondWmNode->cmp;
+	return (double)firstWmNode->cmp - (double)secondWmNode->cmp;
 }
 
 int64_t getCmp(void * array, int pos){
@@ -69,20 +69,18 @@ void sicReset(SicData* sic){
 
 void sicInit(SicData* sic) {
 	sic->Wm = initCircularOrderedArray(SAMPLES_SIZE, sizeof(WmNode), cpyWmNode, cmpWmNode);
-	sic->Wm2 = initCircularOrderedArray(SAMPLES_SIZE, sizeof(WmNode), cpyWmNode, cmpWmNode);
 	sic->Wmode = initCircularOrderedArray(MODE_SAMPLES_SIZE, sizeof(WmNode), cpyWmNode, cmpWmNode);
 	sicReset(sic);
 	sic->state = NO_SYNC;
     sic->actual_m = 0;
     sic->actual_c = 0;	
-    sic->lastN = 10;
+    sic->lastN = 5;
 }
 
 
 
 void sicEnd(SicData* sic) {
 	freeCircularOrderedArray(sic->Wm);
-	freeCircularOrderedArray(sic->Wm2);
 	freeCircularOrderedArray(sic->Wmode);
 }
 
@@ -123,10 +121,12 @@ void sicStep(SicData* sic, int64_t t1, int64_t t2, int64_t t3, int64_t t4) {
 	} 
 }
 
+
+
+/*
 int64_t iteration = 0;
 int64_t lastPos = -1;
 int64_t last = 0;
-
 void printSamples(void* elem){
 	int64_t current = ((WmNode*) elem)->cmp;
 	if(lastPos != -1 && current < last){
@@ -138,6 +138,7 @@ void printSamples(void* elem){
 	lastPos++; 
 	iteration ++;
 }
+*/
 
 #include <inttypes.h>	
 void updateSamples(SicData* sic, int64_t t1, int64_t t2, int64_t t3, int64_t t4){	
@@ -145,10 +146,8 @@ void updateSamples(SicData* sic, int64_t t1, int64_t t2, int64_t t3, int64_t t4)
 	
 	node.phi = (t1 - t2 - sic->lastN * t3 + sic->lastN *t4)/(sic->lastN+1);		
 	node.cmp = node.phi;
-	node.time = t1;
+	node.time = (t1+t4)/2;
 		
-	//sic->lastN = (node.phi - t1 + t2)/(t4-t3 + node.phi);
-	
 	insertOrdered(sic->Wm, &node);
 
 	HalfSampleModeResult hsmResult;
@@ -162,7 +161,7 @@ void updateSamples(SicData* sic, int64_t t1, int64_t t2, int64_t t3, int64_t t4)
 			node.time = getTime(sic->Wm, i);
 			insertOrdered(sic->Wmode, &node);
 		}
-	}
+	}	
 
 	//node.phi = (t1-t2-t3+t4)/2;
 	//node.phi = t1-t2;
@@ -186,11 +185,12 @@ void updateSamples(SicData* sic, int64_t t1, int64_t t2, int64_t t3, int64_t t4)
 	node.phi = t4-t3;
 	node.time = t4;
 	insertOrdered(sic->Wm2, &node);
-*/
+	*/
 
-	//lastPos = -1;
-	//foreach(sic->Wm, printSamples);
-	
+	/*
+	lastPos = -1;
+	foreach(sic->Wm, printSamples);
+	*/
 	
 	/*if(sic->syncSteps % P == 0){
 		HalfSampleModeResult result;
@@ -223,6 +223,8 @@ void calculateLinearFit(SicData* sic){
 			insertOrdered(sic->Wmode, &node);
 	}
 */
+	
+	//linearFit(sic->Wm, 0, sic->Wm->size, getTimeDouble, getPhiDouble, &result); 
 	linearFit(sic->Wmode, 0, sic->Wmode->size, getTimeDouble, getPhiDouble, &result); 
 
 

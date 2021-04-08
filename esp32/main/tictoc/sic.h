@@ -28,7 +28,6 @@ struct SicData {
     int to;
 
     CircularOrderedArray* Wm;
-    CircularOrderedArray* Wm2;
     CircularOrderedArray* Wmode;
 
     double lastN;

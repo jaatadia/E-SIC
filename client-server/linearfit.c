@@ -7,7 +7,7 @@
 
 #include <stdio.h>
 void linearFit(void* array, int start, int end, double(*fx)(void*, int), double(*fy)(void*, int), LinearFitResult* result) {
-	int n = end - start;
+	double n = end - start;
 	double Sx = 0;
 	double Sy = 0;
 	double stt = 0;
