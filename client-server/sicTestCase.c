@@ -349,7 +349,7 @@ void loadValues(SicData* sic, char* file, int64_t* t0, int64_t* estimations, int
     size_t len = 0;
     ssize_t read;
 
-	double lastRealPhiFound = 0;
+	int64_t lastRealPhiFound = 0;
     int64_t lastRealPhi = 0;
 
     (*size) = 0;
@@ -368,7 +368,14 @@ void loadValues(SicData* sic, char* file, int64_t* t0, int64_t* estimations, int
 			//printf(", %ld", parsed.t[3] - parsed.t[0]);
 			//printf("RTT %d: %ld.\n", rtt, parsed.t[3] - parsed.t[0]);
 			if(lastRealPhiFound){
-				printf("n = %f ", (lastRealPhiFound + (double)parsed.t[0] - (double)parsed.t[1])/(-lastRealPhiFound - (double)parsed.t[2] + (double)parsed.t[3]));
+				int64_t rtt = parsed.t[3] - parsed.t[0];
+				int64_t tcs = lastRealPhi - parsed.t[0] + parsed.t[1];
+				int64_t tsc = - lastRealPhi - parsed.t[2] + parsed.t[3];
+
+				int64_t phi = (parsed.t[0] - parsed.t[1] - parsed.t[2] + parsed.t[3])/2;
+				int64_t phiDiff = phi - lastRealPhi;
+				double n = tcs/(double)tsc;
+				printf("rtt = %ld, tcs = %ld, tsc = %ld, phi = %ld, diffToRealPhi = %ld, n=%f\n", rtt, tcs, tsc, phi, phiDiff, n);
 			}
 			rtt++;
 		} else if(parsed.type == INTERRUPTION_LINE){
@@ -382,6 +389,7 @@ void loadValues(SicData* sic, char* file, int64_t* t0, int64_t* estimations, int
 				lastRealPhi = parsed.t[0] - serverInterruptions[(*size)];
 				lastRealPhiFound = 1;
 				(*size) ++;
+				printf("-----\n");
 			}
 		} else if(parsed.type == TIMEOUT_LINE){
 			sicStepTimeout(sic);

@@ -19,6 +19,7 @@ struct WmNode {
 	int64_t cmp;
 	int64_t phi;
     int64_t time;
+    int inserted;
 };
 
 typedef struct WmNode WmNode;
@@ -31,6 +32,7 @@ void cpyWmNode(void * source, void * target){
 	targetWmNode->cmp = sourceWmNode->cmp;
 	targetWmNode->phi = sourceWmNode->phi;
 	targetWmNode->time = sourceWmNode->time;
+	targetWmNode->inserted = sourceWmNode->inserted;
 }
 
 double cmpWmNode(void * first, void * second){
@@ -74,7 +76,10 @@ void sicInit(SicData* sic) {
 	sic->state = NO_SYNC;
     sic->actual_m = 0;
     sic->actual_c = 0;	
-    sic->lastN = 5;
+    
+    sic->lastN = 1;
+	sic->phiSet = 0;
+	sic->phi = 0;
 }
 
 
@@ -144,23 +149,38 @@ void printSamples(void* elem){
 void updateSamples(SicData* sic, int64_t t1, int64_t t2, int64_t t3, int64_t t4){	
 	WmNode node;
 	
+
+	if(sic->phiSet){
+		int64_t tcs = sic->phi - t1 + t2;
+		int64_t tsc = - sic->phi - t3 + t4;
+		sic->lastN = tcs/(double)tsc;
+	}
+
 	node.phi = (t1 - t2 - sic->lastN * t3 + sic->lastN *t4)/(sic->lastN+1);		
-	node.cmp = node.phi;
-	node.time = (t1+t4)/2;
-		
+	node.time = t3 + node.phi;
+
+	node.cmp = node.phi;// - sic->phi;	
+	node.inserted = 0;
 	insertOrdered(sic->Wm, &node);
+	sic->phi = node.phi;
 
 	HalfSampleModeResult hsmResult;
 	if(sic->syncSteps % P == 0){
 		halfSampleModeWindow(sic->Wm, 0, sic->Wm->size, getCmp, &hsmResult, SIC_LINEAR_FIT_WINDOW);
-
 		for(int i=hsmResult.position1; i<hsmResult.position2; i++){
-			WmNode node;	
-			node.phi = getPhi(sic->Wm, i);
-			node.cmp = getCmp(sic->Wm, i);
-			node.time = getTime(sic->Wm, i);
-			insertOrdered(sic->Wmode, &node);
+			if(!((WmNode*)(sic->Wm->data[i]))->inserted){
+				WmNode node;
+				node.phi = getPhi(sic->Wm, i);
+				node.cmp = getCmp(sic->Wm, i);
+				node.time = getTime(sic->Wm, i);
+				insertOrdered(sic->Wmode, &node);
+				((WmNode*)(sic->Wm->data[i]))->inserted = 1;
+			}
 		}
+
+		LinearFitResult result;
+		linearFit(sic->Wmode, 0, sic->Wmode->size, getTimeDouble, getPhiDouble, &result);
+		sic->phi = (result.m * t1 + result.c);
 	}	
 
 	//node.phi = (t1-t2-t3+t4)/2;

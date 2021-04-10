@@ -38,6 +38,7 @@ struct SicData {
     double actual_m2;
     double actual_c2;
 
+    int phiSet;
     double phi;
 };
 
