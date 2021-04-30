@@ -77,7 +77,7 @@ void sicInit(SicData* sic) {
     sic->actual_m = 0;
     sic->actual_c = 0;	
     
-    sic->lastN = 1;
+    sic->lastN = 6;
 	sic->phiSet = 0;
 	sic->phi = 0;
 }

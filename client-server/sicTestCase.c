@@ -375,7 +375,8 @@ void loadValues(SicData* sic, char* file, int64_t* t0, int64_t* estimations, int
 				int64_t phi = (parsed.t[0] - parsed.t[1] - parsed.t[2] + parsed.t[3])/2;
 				int64_t phiDiff = phi - lastRealPhi;
 				double n = tcs/(double)tsc;
-				printf("rtt = %ld, tcs = %ld, tsc = %ld, phi = %ld, diffToRealPhi = %ld, n=%f\n", rtt, tcs, tsc, phi, phiDiff, n);
+				//printf("rtt = %ld, tcs = %ld, tsc = %ld, phi = %ld, diffToRealPhi = %ld, n=%f\n", rtt, tcs, tsc, phi, phiDiff, n);
+				printf("%f, ", n);
 			}
 			rtt++;
 		} else if(parsed.type == INTERRUPTION_LINE){
@@ -384,12 +385,14 @@ void loadValues(SicData* sic, char* file, int64_t* t0, int64_t* estimations, int
 				//printf("Iteration %ld - ", (*size));
 				//assertInMargin("training assertion", parsed.t[1], sicTime(sic, parsed.t[0]), 100);
 				t0[(*size)] = parsed.t[0];
-				//estimations[(*size)] = parsed.t[1];
-				estimations[(*size)] = sicTime(sic, parsed.t[0]);
+				
+				estimations[(*size)] = parsed.t[1];
+				//estimations[(*size)] = sicTime(sic, parsed.t[0]);
+				
 				lastRealPhi = parsed.t[0] - serverInterruptions[(*size)];
 				lastRealPhiFound = 1;
 				(*size) ++;
-				printf("-----\n");
+				//printf("-----\n");
 			}
 		} else if(parsed.type == TIMEOUT_LINE){
 			sicStepTimeout(sic);
@@ -464,10 +467,10 @@ void fileTest(){
 
 
 	printf("\n---------loading1---------.\n");
-	loadServerValues("./samples/04_07/ESP_SERVER.txt", serverT, &sizeServerT);
+	loadServerValues("./samples/04_29/ESP_SERVER.txt", serverT, &sizeServerT);
 	int64_t size = sizeServerT;
 	
-	loadValues(&sicA, "./samples/04_07/ESP_CLIENT.txt", t0A, estimationsNodeA, &sizeEstimationsNodeA, serverT);
+	loadValues(&sicA, "./samples/04_29/ESP_CLIENT.txt", t0A, estimationsNodeA, &sizeEstimationsNodeA, serverT);
 	if(sizeEstimationsNodeA < size) size = sizeEstimationsNodeA;
 	
 	//loadValues(&sicB, "./samples/ESP3.txt", t0B, estimationsNodeB, &sizeEstimationsNodeB);

@@ -74,7 +74,7 @@ void sicInit(SicData* sic) {
 	sic->state = NO_SYNC;
     sic->actual_m = 0;
     sic->actual_c = 0;	
-    sic->lastN = 5;
+    sic->lastN = 1;
 }
 
 

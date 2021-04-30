@@ -19,7 +19,7 @@
 #include "microtime.h"
 
 //#define TICTOC_SERVER "192.168.0.146"
-#define TICTOC_SERVER "192.168.0.189"
+#define TICTOC_SERVER "192.168.0.148"
 #define TICTOC_PORT 8080
 
 #include "esp_timer.h"
