@@ -23,8 +23,8 @@
 #define SYNC 3
 
 struct SicData { 
-	int state;
-	int syncSteps;
+    int state;
+    int syncSteps;
     int to;
 
     CircularOrderedArray* Wm;
@@ -34,12 +34,6 @@ struct SicData {
 
     double actual_m;
     double actual_c;
-
-    double actual_m2;
-    double actual_c2;
-
-    int phiSet;
-    double phi;
 };
 
 typedef struct SicData SicData;
