@@ -60,7 +60,7 @@ runtests: circularOrderedArrayTestCase halfSampleModeTestCase linearfitTestCase 
 	./sicTestCase
 
 clear:
-	-rm main client server *.o *TestCase
+	-rm main client server *.o *TestCase values.py
 
 clean: clear
 
