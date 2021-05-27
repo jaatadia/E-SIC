@@ -1,29 +1,31 @@
 #include "sic.h"
 #include "halfSampleMode.h"
 #include <stdio.h>
+#include <inttypes.h>	
 
 //#define TICTOC_SIC_DEBUG
 
-int SAMPLE_WINDOWS_SIZE = 3;
-int SAMPLE_WINDOWS[] = {300, 150, 75};
-
+void sicReset(SicData* sic);
 void updateSamples(SicData* sic, int64_t t1, int64_t t2, int64_t t3, int64_t t4);
 void calculateLinearFit(SicData* sic);
 
 /***********************************
-* 			Wm Definitions
+* 			WmNode Definitions
+*
+* This datatype represents the data corresponding to a single estimation of phi.
 ***********************************/
 // TODO extract this to its own module
 
 struct WmNode { 
-	int64_t cmp;
-	int64_t phi;
+	int64_t cmp; // This value will be used to order the array
+	int64_t phi; 
     int64_t time;
 };
 
 typedef struct WmNode WmNode;
 
 
+// function to copy a WmNode from source to target.
 void cpyWmNode(void * source, void * target){
 	WmNode* sourceWmNode = (WmNode*) source;
 	WmNode* targetWmNode = (WmNode*) target;
@@ -33,12 +35,19 @@ void cpyWmNode(void * source, void * target){
 	targetWmNode->time = sourceWmNode->time;
 }
 
+/* function to order two WmNode:
+* returns:
+*	- < 0 <-> first < second.
+*	- = 0 <-> first = second.
+*	- > 0 <-> first > second.
+*/
 double cmpWmNode(void * first, void * second){
 	WmNode* firstWmNode = (WmNode*) first;
 	WmNode* secondWmNode = (WmNode*) second;
 	return (double)firstWmNode->cmp - (double)secondWmNode->cmp;
 }
 
+//function to retrieve the value to use for the comparison in the position pos of the array.
 int64_t getCmp(void * array, int pos){
 	return ((WmNode*)((CircularOrderedArray*) array)->data[pos])->cmp;
 }
@@ -62,11 +71,6 @@ double getTimeDouble(void * array, int pos){
 //----------------------------------
 
 
-void sicReset(SicData* sic){
-	sic->syncSteps = 0;
-	resetCircularOrderedArray(sic->Wm);
-}
-
 void sicInit(SicData* sic) {
 	sic->Wm = initCircularOrderedArray(SAMPLES_SIZE, sizeof(WmNode), cpyWmNode, cmpWmNode);
 	sic->Wmode = initCircularOrderedArray(MODE_SAMPLES_SIZE, sizeof(WmNode), cpyWmNode, cmpWmNode);
@@ -74,10 +78,14 @@ void sicInit(SicData* sic) {
 	sic->state = NO_SYNC;
     sic->actual_m = 0;
     sic->actual_c = 0;	
-    sic->lastN = 1;
 }
 
-
+// reset internal information without discarding current estimation paramenters.
+void sicReset(SicData* sic){
+	sic->syncSteps = 0;
+	resetCircularOrderedArray(sic->Wm);
+	resetCircularOrderedArray(sic->Wmode);
+}
 
 void sicEnd(SicData* sic) {
 	freeCircularOrderedArray(sic->Wm);
@@ -86,6 +94,7 @@ void sicEnd(SicData* sic) {
 
 void sicStepTimeout(SicData* sic){
 	sic->to++;
+	//If the amount of timeouted requests reached the threshold we restart the algorithm.
 	if(sic->to == MAX_to){
 		if(sic->state == NO_SYNC) { 
 			sicReset(sic);
@@ -93,7 +102,8 @@ void sicStepTimeout(SicData* sic){
 			#ifdef TICTOC_SIC_DEBUG
 			printf("SIC - Restarting NO_SYNC state.\n");
 			#endif
-		} else { //if we have already an actual_m and actual_c we want to keep them
+		} else { 
+			//If we have already an actual_m and actual_c we want to keep them
 			sicReset(sic);
 			sic->state = RE_SYNC;
 			#ifdef TICTOC_SIC_DEBUG
@@ -104,13 +114,15 @@ void sicStepTimeout(SicData* sic){
 }
 
 void sicStep(SicData* sic, int64_t t1, int64_t t2, int64_t t3, int64_t t4) {
-	sic->to=0;
-	
-	sic->syncSteps++;
+	sic->to=0; // Successfully received data -> reset timeout counter
+	sic->syncSteps++; // Increase loop counter
+
+
 	updateSamples(sic, t1, t2, t3, t4);
 
+	// If we filled the sample array for the first time or one minute has passed since the last estimation we get a new estimation of phi
 	if(((sic->state == NO_SYNC || sic->state == RE_SYNC) && sic->syncSteps == SAMPLES_SIZE) ||
-		((sic->state == PRE_SYNC || sic->state == SYNC) && sic->syncSteps == P)){
+		(sic->state == SYNC && sic->syncSteps == P)){
 		
 		calculateLinearFit(sic);
 		sic->state = SYNC;
@@ -122,37 +134,21 @@ void sicStep(SicData* sic, int64_t t1, int64_t t2, int64_t t3, int64_t t4) {
 }
 
 
-
-/*
-int64_t iteration = 0;
-int64_t lastPos = -1;
-int64_t last = 0;
-void printSamples(void* elem){
-	int64_t current = ((WmNode*) elem)->cmp;
-	if(lastPos != -1 && current < last){
-		printf("!!!order failed %ld: %ld, %ld: %ld.\n", lastPos, last, lastPos +1, current);	
-		printf("iteration %ld.\n", iteration);	
-		exit(1);	
-	}
-	last = current;
-	lastPos++; 
-	iteration ++;
-}
-*/
-
-#include <inttypes.h>	
+// Calculates phi and inserts it in the corresponding arrays
 void updateSamples(SicData* sic, int64_t t1, int64_t t2, int64_t t3, int64_t t4){	
 	WmNode node;
 	
-	node.phi = (t1 - t2 - sic->lastN * t3 + sic->lastN *t4)/(sic->lastN+1);		
+	node.phi = (t1 - t2 - N * t3 + N * t4)/(N+1);
 	node.cmp = node.phi;
 	node.time = (t1+t4)/2;
 		
+	// Insert the latest sample
 	insertOrdered(sic->Wm, &node);
 
+	// Each minute we get the mode values from the samples array and insert them mode array
 	HalfSampleModeResult hsmResult;
 	if(sic->syncSteps % P == 0){
-		halfSampleModeWindow(sic->Wm, 0, sic->Wm->size, getCmp, &hsmResult, SIC_LINEAR_FIT_WINDOW);
+		halfSampleModeWindow(sic->Wm, 0, sic->Wm->size, getCmp, &hsmResult, MODE_WINDOW);
 
 		for(int i=hsmResult.position1; i<hsmResult.position2; i++){
 			WmNode node;	
@@ -162,91 +158,14 @@ void updateSamples(SicData* sic, int64_t t1, int64_t t2, int64_t t3, int64_t t4)
 			insertOrdered(sic->Wmode, &node);
 		}
 	}	
-
-	//node.phi = (t1-t2-t3+t4)/2;
-	//node.phi = t1-t2;
-	//node.phi = t4-t3;
-
-
-	//node.cmp = (t1-t2-t3+t4)/2;
-	//node.cmp = t1-t2;
-	//node.cmp = t4-t3;
-
-
-	//node.time = t4;
-
-	//node.cmp = t1-t2;
-	//node.phi = t1-t2;
-	//node.time = t1;
-	//insertOrdered(sic->Wm, &node);
-
-	/*
-	node.cmp = t4-t3;
-	node.phi = t4-t3;
-	node.time = t4;
-	insertOrdered(sic->Wm2, &node);
-	*/
-
-	/*
-	lastPos = -1;
-	foreach(sic->Wm, printSamples);
-	*/
-	
-	/*if(sic->syncSteps % P == 0){
-		HalfSampleModeResult result;
-		halfSampleMode(sic->Wm, 0, sic->Wm->size, getCmp, &result);
-		cpyWmNode((WmNode*) sic->Wm->data[result.position1], &node);
-		insertOrdered(sic->Wmode, &node);
-		if(result.position2 != -1) {
-			cpyWmNode((WmNode*) sic->Wm->data[result.position2], &node);
-			insertOrdered(sic->Wmode, &node);
-		}
-		sic->phi=result.mode;
-
-	}*/
 }
 
+// Uses the current data to estimate the phi parameters.
 void calculateLinearFit(SicData* sic){
 	LinearFitResult result;
-	//HalfSampleModeResult hsmResult;
-	
-//	LinearFitResult result2;
-//	HalfSampleModeResult hsmResult2;
-	
-/*	halfSampleModeWindow(sic->Wm, 0, sic->Wm->size, getCmp, &hsmResult, SIC_LINEAR_FIT_WINDOW);
-
-	for(int i=hsmResult.position1; i<hsmResult.position2; i++){
-			WmNode node;	
-			node.phi = getPhi(sic->Wm, i);
-			node.cmp = getCmp(sic->Wm, i);
-			node.time = getTime(sic->Wm, i);
-			insertOrdered(sic->Wmode, &node);
-	}
-*/
-	
-	//linearFit(sic->Wm, 0, sic->Wm->size, getTimeDouble, getPhiDouble, &result); 
 	linearFit(sic->Wmode, 0, sic->Wmode->size, getTimeDouble, getPhiDouble, &result); 
-
-
-//	halfSampleModeWindow(sic->Wm2, 0, sic->Wm2->size, getCmp, &hsmResult2, SIC_LINEAR_FIT_WINDOW);
-//	linearFit(sic->Wm2, hsmResult2.position1, hsmResult2.position2, getTimeDouble, getPhiDouble, &result2); 
-
-	/*
-	halfSampleMode(sic->Wm, 0, sic->Wm->size, getCmp, &hsmResult);
-	
-
-	HalfSampleModeResult hsmResult2;
-	halfSampleMode(sic->Wm2, 0, sic->Wm2->size, getCmp, &hsmResult2);
-
-	double n = 0.2;
-	sic->phi = (n*hsmResult.mode + hsmResult2.mode)/(1+n);*/
-
-
 	sic->actual_m = result.m;
 	sic->actual_c = result.c;
-
-//	sic->actual_m2 = result2.m;
-//	sic->actual_c2 = result2.c;
 }
 
 int sicTimeAvailable(SicData* sic){
@@ -255,10 +174,6 @@ int sicTimeAvailable(SicData* sic){
 
 int64_t computePhi(SicData* sic, int64_t systemClock){
 	return (int64_t)(systemClock*sic->actual_m + sic->actual_c);
-	//return sic->phi;
-	
-	//double n = 1;
-	//return (n*(systemClock*sic->actual_m + sic->actual_c) + (systemClock*sic->actual_m2 + sic->actual_c2))/(1+n);
 }
 
 int64_t sicTime(SicData* sic, int64_t systemClock){
