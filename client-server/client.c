@@ -33,7 +33,7 @@ void setupServerAddr(struct sockaddr_in * servaddr) {
 	servaddr->sin_family = AF_INET; 
 	servaddr->sin_port = htons(PORT); 
 	//servaddr->sin_addr.s_addr = INADDR_ANY; 
-	inet_aton(SERVER, &(servaddr->sin_addr.s_addr));
+	inet_aton(SERVER, (struct in_addr*) &(servaddr->sin_addr.s_addr));
 }
 
 int main() { 
@@ -43,23 +43,23 @@ int main() {
 	struct sockaddr_in servaddr;
 	setupServerAddr(&servaddr); 
 	
-	size_t outGoingSize = sizeof(int32_t) * 2; 
+	size_t outGoingSize = sizeof(int32_t) * 2 * 3; 
 	size_t incomingSize = sizeof(int32_t) * 2 * 3;
 	socklen_t servaddrSize = sizeof(servaddr);
 
 	long long timestamp = epochInMicros();
-	encodeEpochInMicros(timestamp, &timestamps, 0);
+	encodeEpochInMicros(timestamp, (int32_t*) &timestamps, 0);
 
 	printf("Sending t1: %lld.\n", timestamp); 
 	sendto(sockfd, (const int32_t *)timestamps, outGoingSize,  0, (const struct sockaddr *) &servaddr, servaddrSize); 
 	printf("Awaiting response...\n"); 
 	
 	// TODO add verification of server identity	
-	if(recv(sockfd, (int32_t *)timestamps, incomingSize, MSG_WAITALL) == incomingSize){
-		encodeEpochInMicros(epochInMicros(), &timestamps, 3*2);
+	if(recv(sockfd, (int32_t*)timestamps, incomingSize, MSG_WAITALL) == incomingSize){
+		encodeEpochInMicros(epochInMicros(), (int32_t* ) &timestamps, 3*2);
 		printf("Received timestamps\n"); 	
 		for(int i = 0; i<4; i++) {
-			printf("t%d: %lld\n", i + 1, (long long) decodeEpochInMicros(&timestamps, i*2)); 	
+			printf("t%d: %lld\n", i + 1, (long long) decodeEpochInMicros((int32_t*) &timestamps, i*2)); 	
 		}
 	} else {
 		printf("timeout\n");

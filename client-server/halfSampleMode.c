@@ -72,7 +72,7 @@ void halfSampleMode(void* array, int start, int end, int64_t(*fx)(void*, int), H
 	}
 }
 
-void halfSampleModeWindow(void* array, int start, int end, int64_t(*fx)(void*, int), HalfSampleModeResult* result, int windowSize){
+void halfSampleModeWindow(void* array, int start, int end, int64_t(*fx)(void*, int), int windowSize, HalfSampleModeResult* result){
 	int size = end - start;
 	if(size <= windowSize) {
 		result->position1=start;
@@ -85,7 +85,7 @@ void halfSampleModeWindow(void* array, int start, int end, int64_t(*fx)(void*, i
 		printf("HalfSampleMode - j: %d N: %d.\n", j, N);
 		#endif	
 
-		halfSampleModeWindow(array, j, j + N, fx, result, windowSize);
+		halfSampleModeWindow(array, j, j + N, fx, windowSize, result);
 	}
 }
 

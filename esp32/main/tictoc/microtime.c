@@ -5,7 +5,7 @@
 
 int64_t epochInMicros(){
 	struct timeval currentTime;
-	gettimeofday(&currentTime, NULL);
+	gettimeofday(&currentTime, 0);
 	return currentTime.tv_sec * (int)1e6 + currentTime.tv_usec;	
 }
 

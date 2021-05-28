@@ -35,12 +35,7 @@ void cpyWmNode(void * source, void * target){
 	targetWmNode->time = sourceWmNode->time;
 }
 
-/* function to order two WmNode:
-* returns:
-*	- < 0 <-> first < second.
-*	- = 0 <-> first = second.
-*	- > 0 <-> first > second.
-*/
+// function to order two WmNode
 double cmpWmNode(void * first, void * second){
 	WmNode* firstWmNode = (WmNode*) first;
 	WmNode* secondWmNode = (WmNode*) second;
@@ -148,7 +143,7 @@ void updateSamples(SicData* sic, int64_t t1, int64_t t2, int64_t t3, int64_t t4)
 	// Each minute we get the mode values from the samples array and insert them mode array
 	HalfSampleModeResult hsmResult;
 	if(sic->syncSteps % P == 0){
-		halfSampleModeWindow(sic->Wm, 0, sic->Wm->size, getCmp, &hsmResult, MODE_WINDOW);
+		halfSampleModeWindow(sic->Wm, 0, sic->Wm->size, getCmp, MODE_WINDOW, &hsmResult);
 
 		for(int i=hsmResult.position1; i<hsmResult.position2; i++){
 			WmNode node;	

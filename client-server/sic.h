@@ -4,6 +4,10 @@
 #include "linearfit.h"
 #include "circularOrderedArray.h"
 
+/* 
+* This library represents the core of the tic-toc algorithm.
+*/
+
 /*
 * Amount of samples historic samples the algorithm uses
 * when the algoritm receives this amount of samples it will start
