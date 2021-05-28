@@ -71,7 +71,7 @@ int main() {
 	int32_t timestamps[2*3]; //TODO remove magic constants
 	struct sockaddr_in cliaddr; 
 
-	size_t incomingSize = sizeof(int32_t) * 2;
+	size_t incomingSize = sizeof(int32_t) * 2 * 3;
 	size_t outGoingSize = sizeof(int32_t) * 2 * 3;
 	socklen_t cliadrrSize = sizeof(cliaddr);
 	
@@ -83,13 +83,13 @@ int main() {
 		memset(&cliaddr, 0, cliadrrSize);
 		// TODO add verification of client identity	 
 		if(recvfrom(socketfd, (int32_t *) timestamps, incomingSize, MSG_WAITALL, (struct sockaddr *) &cliaddr, &cliadrrSize) > 0){
-			encodeEpochInMicros(epochInMicros(), &timestamps, 1*2);
+			encodeEpochInMicros(epochInMicros(), (int32_t*) &timestamps, 1*2);
 
-			micros = decodeEpochInMicros(&timestamps, 0);
+			micros = decodeEpochInMicros((int32_t*)&timestamps, 0);
 			microsToTimestam(micros, timestamp);
 			printf("Received t1: %lld (%s).\n", micros, timestamp); 
 			
-			encodeEpochInMicros(epochInMicros(), &timestamps, 2*2);
+			encodeEpochInMicros(epochInMicros(), (int32_t*) &timestamps, 2*2);
 			sendto(socketfd, (const int32_t *)timestamps, outGoingSize, 0, (const struct sockaddr *) &cliaddr, cliadrrSize); 	
 		}  
 	}

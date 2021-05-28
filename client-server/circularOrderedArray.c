@@ -4,7 +4,7 @@
 
 //#define TICTOC_CIRCULAR_ARRAY_DEBUG
 
-CircularOrderedArray * initCircularOrderedArray(int maxSize, size_t dataSize, void (*cpy)(void*, void*), int (*cmp)(void*, void*)){
+CircularOrderedArray * initCircularOrderedArray(int maxSize, size_t dataSize, void (*cpy)(void*, void*), double (*cmp)(void*, void*)){
 	CircularOrderedArray* array = malloc(sizeof(CircularOrderedArray));
 	array->next = 0;
 	array->size = 0;
@@ -52,22 +52,42 @@ void swap(CircularOrderedArray * array, int first, int second){
 }
 
 int orderRight(CircularOrderedArray * array, int position){
+	#ifdef TICTOC_CIRCULAR_ARRAY_DEBUG
+	printf("--- Ordering Right ---\n");
+	#endif
 	int nextPosition = position;
-	while((nextPosition + 1 < array->size) && (*array->cmp)(array->data[nextPosition], array->data[nextPosition+1]) > 0){ //hasNext && bigger than next
+
+	while((nextPosition + 1 < array->size) && (((*array->cmp)(array->data[nextPosition], array->data[nextPosition+1])) > 0)){ //hasNext && bigger than next
 		swap(array, nextPosition, nextPosition+1);
+		#ifdef TICTOC_CIRCULAR_ARRAY_DEBUG
+		printf("Swapped %d > %d\n", nextPosition, nextPosition+1);	
+		#endif
+
 		nextPosition++;
 	}
 	return position!=nextPosition;
 }
 
-void orderLeft(CircularOrderedArray * array, int position){
-	while(position > 0 && (*array->cmp)(array->data[position], array->data[position-1]) < 0){ //hasPrevious && smaller than previous
-		swap(array, position, position-1);
-		position--;
+int orderLeft(CircularOrderedArray * array, int position){
+	#ifdef TICTOC_CIRCULAR_ARRAY_DEBUG
+	printf("--- Ordering Left ---\n");
+	#endif
+	int nextPosition = position;
+
+	while((nextPosition > 0) && (((*array->cmp)(array->data[nextPosition-1], array->data[nextPosition])) > 0)){ //hasPrevious && smaller than previous
+		swap(array, nextPosition-1, nextPosition);
+		#ifdef TICTOC_CIRCULAR_ARRAY_DEBUG
+		printf("Swapped %d < %d\n", nextPosition-1, nextPosition);	
+		#endif
+		nextPosition--;
 	}
+	return position!=nextPosition;
 }
 
 void orderPosition(CircularOrderedArray * array, int position){
+	#ifdef TICTOC_CIRCULAR_ARRAY_DEBUG
+	printf("--- Ordering ---\n");
+	#endif
 	if(!orderRight(array, position)){
 		orderLeft(array, position);
 	}	
@@ -81,20 +101,6 @@ int findPosition(int* array, int size, int order) {
 	//should never arrive here
 	return -1;
 }
-
-/*
-void printDebugInfo(CircularOrderedArray* array){
-	printf("CircularOrderedArray - Array Conent: \n");	
-	printf("CircularOrderedArray - [");	
-	for (int i = 0; i < array->size; i++){
-		printf("{\"value\":\"%"PRId64"\", \"order\":\"%d\"}" , array->array[i].value, array->array[i].order);	
-		if(i != array->size - 1) printf(", ");	
-	}
-	printf("].\n");	
-	printf("CircularOrderedArray - Current Median: %"PRId64".\n", median(array));
-	printf("CircularOrderedArray - Next Order to override: %d.\n", array->next);
-}
-*/
 
 void insertOrdered(CircularOrderedArray* array, void* node){
 	int insertPosition;
@@ -110,10 +116,11 @@ void insertOrdered(CircularOrderedArray* array, void* node){
 	array->next = (array->next + 1) % array->maxSize;
 
 	orderPosition(array, insertPosition);
-
-	#ifdef TICTOC_CIRCULAR_ARRAY_DEBUG
-	printDebugInfo(array);
-	#endif
 }
 
 
+void foreach(CircularOrderedArray* array, void (*f)(void*)){
+	for(int i = 0; i < array->size; i ++) {
+		(*f)(array->data[i]);
+	}
+}

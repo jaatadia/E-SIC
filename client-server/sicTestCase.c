@@ -37,23 +37,17 @@ void syncStatesTestCase() {
 	for(int i=0; i< 720; i++){
 		sicStep(&sic, i*1000, i*1000 + 10, i*1000 + 11, i*1000 + 21);
 		if(i == 598){
-			assert("Iteration 598 noSync", sic.state, NO_SYNC);
+			assert("Iteration 598 state", sic.state, NO_SYNC);
 			assert("Iteration 598 steps", sic.syncSteps, 599);
 		} else if(i == 599) {
-			assert("Iteration 599 preSync", sic.state, NO_SYNC);
-			assert("Iteration 599 steps", sic.syncSteps, 600);
+			assert("Iteration 599 state", sic.state, SYNC);
+			assert("Iteration 599 steps", sic.syncSteps, 0);
 		} else if(i == 658) {
-			assert("Iteration 658 preSync", sic.state, NO_SYNC);
-			assert("Iteration 658 steps", sic.syncSteps, 659);
+			assert("Iteration 658 state", sic.state, SYNC);
+			assert("Iteration 658 steps", sic.syncSteps, 59);
 		} else if(i == 659) {
-			assert("Iteration 659 preSync", sic.state, PRE_SYNC);
+			assert("Iteration 659 state", sic.state, SYNC);
 			assert("Iteration 659 steps", sic.syncSteps, 0);
-		} else if(i == 718) {
-			assert("Iteration 718 preSync", sic.state, PRE_SYNC);
-			assert("Iteration 718 steps", sic.syncSteps, 59);
-		} else if(i == 719) {
-			assert("Iteration 719 preSync", sic.state, SYNC);
-			assert("Iteration 719 steps", sic.syncSteps, 0);
 		}
 	}
 
@@ -150,7 +144,7 @@ void parallelSimulatedVariations() {
 	sicInit(&sicA);
 	sicInit(&sicB);
 	
-	int maxVariation = 1000;
+	int maxVariation = 500;
 	int64_t serverTime = 1602262903000000;
 	int64_t serverDelay = 50;
 	int64_t startTimeA = 1000;
@@ -195,8 +189,8 @@ void parallelSimulatedVariations() {
 	printf("Server Time Acording to NodeA: %ld. Diff to RealServer: %ld.\n", tS_A, tS - tS_A);
 	printf("Server Time Acording to NodeB: %ld. Diff to RealServer: %ld.\n", tS_B, tS - tS_B);
 	
-	assertInMargin("Parallel Variations: server time A", tS_A, tS, 100);
-	assertInMargin("Parallel Variations: server time B", tS_B, tS, 100);
+	assertInMargin("Parallel Variations: server time A", tS_A, tS, 1000);
+	assertInMargin("Parallel Variations: server time B", tS_B, tS, 1000);
 
 	sicEnd(&sicA);
 	sicEnd(&sicB);
@@ -339,15 +333,16 @@ void parseLine(ParsedT * parsed, char* line){
 		exit(-11);
 	}
 }
-
-/** en input file parsing **/
 	
-void loadValues(SicData* sic, char* file, int64_t* t0, int64_t* estimations, int64_t* size){
+void loadValues(SicData* sic, char* file, int64_t* t0, int64_t* estimations, int64_t* size, int64_t* serverInterruptions){
 	initRegex();
 	FILE * fp;
     char * line = NULL;
     size_t len = 0;
     ssize_t read;
+
+	int64_t lastRealPhiFound = 0;
+    int64_t lastRealPhi = 0;
 
     (*size) = 0;
 
@@ -364,17 +359,32 @@ void loadValues(SicData* sic, char* file, int64_t* t0, int64_t* estimations, int
 			sicStep(sic, parsed.t[0], parsed.t[1], parsed.t[2], parsed.t[3]);	
 			//printf(", %ld", parsed.t[3] - parsed.t[0]);
 			//printf("RTT %d: %ld.\n", rtt, parsed.t[3] - parsed.t[0]);
+			if(lastRealPhiFound){
+				int64_t rtt = parsed.t[3] - parsed.t[0];
+				int64_t tcs = lastRealPhi - parsed.t[0] + parsed.t[1];
+				int64_t tsc = - lastRealPhi - parsed.t[2] + parsed.t[3];
+
+				int64_t phi = (parsed.t[0] - parsed.t[1] - parsed.t[2] + parsed.t[3])/2;
+				int64_t phiDiff = phi - lastRealPhi;
+				double n = tcs/(double)tsc;
+				//printf("rtt = %ld, tcs = %ld, tsc = %ld, phi = %ld, diffToRealPhi = %ld, n=%f\n", rtt, tcs, tsc, phi, phiDiff, n);
+				//printf("%f, ", n);
+			}
 			rtt++;
 		} else if(parsed.type == INTERRUPTION_LINE){
 			//printf("tt_input:%ld tt:%ld \n", parsed.t[0], parsed.t[1]);
 			if(parsed.t[1] != 0) {
 				//printf("Iteration %ld - ", (*size));
-				assertInMargin("training assertion", parsed.t[1], sicTime(sic, parsed.t[0]), 100);
+				//assertInMargin("training assertion", parsed.t[1], sicTime(sic, parsed.t[0]), 100);
 				t0[(*size)] = parsed.t[0];
-				//estimations[(*size)] = parsed.t[1];
-				estimations[(*size)] = sicTime(sic, parsed.t[0]);
 				
+				estimations[(*size)] = parsed.t[1];
+				//estimations[(*size)] = sicTime(sic, parsed.t[0]);
+				
+				//lastRealPhi = parsed.t[0] - serverInterruptions[(*size)];
+				//lastRealPhiFound = 1;
 				(*size) ++;
+				//printf("-----\n");
 			}
 		} else if(parsed.type == TIMEOUT_LINE){
 			sicStepTimeout(sic);
@@ -395,7 +405,7 @@ void parseServerLine(ParsedT * parsed, char* line) {
 	}
 }
 
-void loadServerValues(char* file, int64_t* estimations, int64_t* size){
+void loadServerValues(char* file, int64_t* interruptions, int64_t* size){
 	initRegex();
 	FILE * fp;
     char * line = NULL;
@@ -411,7 +421,7 @@ void loadServerValues(char* file, int64_t* estimations, int64_t* size){
         //printf("line: %s", line);
         parseServerLine(&parsed, line);
 		if(parsed.type == INTERRUPTION_LINE){
-			estimations[(*size)] = parsed.t[0];
+			interruptions[(*size)] = parsed.t[0];
 			(*size) ++;
 		}
 
@@ -420,72 +430,79 @@ void loadServerValues(char* file, int64_t* estimations, int64_t* size){
 	free(line);
 }
 
+/** end input file parsing **/
+
+void printArray(FILE * f, char* name, int64_t* values, int64_t size){
+	fprintf(f, "%s = [", name);
+	fprintf(f, "%ld", values[0]);
+	for(int i = 1; i<size; i++) {
+		fprintf(f, ", %ld", values[i]);
+	}
+	fprintf(f, "]\n");
+}
+
+
 void fileTest(){
 	SicData sicA;
 	SicData sicB;
 	sicInit(&sicA);
 	sicInit(&sicB);
 
-	
+	int64_t sizeServerT;
+	int64_t serverT[50000];
+
 	int64_t sizeEstimationsNodeA;
-	int64_t estimationsNodeA[5000];
-	int64_t t0[5000];
+	int64_t estimationsNodeA[50000];
+	int64_t t0A[50000];
 
 	int64_t sizeEstimationsNodeB;
-	int64_t estimationsNodeB[5000];
+	int64_t estimationsNodeB[50000];
+	int64_t t0B[50000];
 
 
-	printf("\n---------loading1---------.\n");
-	loadValues(&sicA, "./CLIENT_03.txt", t0, estimationsNodeA, &sizeEstimationsNodeA);
-
+	printf("\n--------- File test - loading values ... ---------.\n");
+	//loadServerValues("./samples/04_29/ESP_SERVER.txt", serverT, &sizeServerT);
+	//int64_t size = sizeServerT;
 	
-	loadServerValues("./SERVER_03.txt", estimationsNodeB, &sizeEstimationsNodeB);
+	loadValues(&sicA, "./samples/05_27/Node1.txt", t0A, estimationsNodeA, &sizeEstimationsNodeA, serverT);
+	int64_t size = sizeEstimationsNodeA;
+	//if(sizeEstimationsNodeA < size) size = sizeEstimationsNodeA;
+	
+	loadValues(&sicB, "./samples/05_27/Node2.txt", t0B, estimationsNodeB, &sizeEstimationsNodeB, serverT);
+	if(sizeEstimationsNodeB < size) size = sizeEstimationsNodeB;
 
-/*
-	printf("\n---------loading2---------.\n");
-	loadValues(&sicB, "./ESP2.txt", estimationsNodeB, &sizeEstimationsNodeB);
-*/
 	
 	int64_t maxDif = 0;
-	int64_t minDif = LONG_MAX;
+	int64_t minDif = 10000000;
 
-	int starting = 305;
-	for(int i = starting; i<sizeEstimationsNodeA && i < sizeEstimationsNodeB; i++) {
-		printf("Iteration %d - ", i);
-		assertInMargin("fileTest: timeServer A B ", estimationsNodeA[i], estimationsNodeB[i], 100);	
-		int64_t dif = estimationsNodeA[i] - estimationsNodeB[i];
-		dif = (dif < 0) ? - dif : dif;
-		maxDif = (dif > maxDif) ? dif : maxDif;
-		minDif = (dif < minDif) ? dif : minDif;
-	}
-
-	printf("\nerror = [");
-	for(int i = starting; i<sizeEstimationsNodeA && i < sizeEstimationsNodeB; i++) {
-		int64_t dif = estimationsNodeA[i] - estimationsNodeB[i];
-		dif = (dif < 0) ? - dif : dif;
-		if(i==starting){
-			printf("%ld", dif);
-		} else {
-			printf(", %ld", dif);
-		}
-	}
-	printf("]\n");
-
-	printf("t = [");
-	for(int i = starting; i<sizeEstimationsNodeA && i < sizeEstimationsNodeB; i++) {
-		if(i==starting){
-			printf("%ld", t0[i]);
-		} else {
-			printf(", %ld", t0[i]);
-		}
+	int starting = 0;
+	for(int i = starting; i<size; i++) {
+		//printf("Iteration %d - ", i);
+		//assertInMargin("fileTest: timeServer A B ", estimationsNodeA[i], serverT[i], 2000);	
+		//int64_t dif = estimationsNodeA[i] - serverT[i];
 		
-	}
-	printf("]\n");
+		assertInMargin("fileTest: timeServer A B ", estimationsNodeA[i], estimationsNodeB[i], 2000);	
+		int64_t dif = estimationsNodeA[i] - estimationsNodeB[i];
 
-	printf("\n");
-	printf("# samples: %ld\n", sizeEstimationsNodeB);
-	printf("MinDif: %ld.\n", minDif);
-	printf("MaxDif: %ld.\n", maxDif);
+		dif = (dif < 0) ? - dif : dif;
+		if(dif > maxDif) maxDif = dif;
+		if(dif < minDif) minDif = dif;
+	}
+
+	printf("# samples: %ld\n", size);
+	printf("MinDif: %ld\n", minDif);
+	printf("MaxDif: %ld\n", maxDif);
+
+
+	FILE* f = fopen("values.py", "w");
+
+	//printArray(f, "serverTime", serverT, size);
+	printArray(f, "t0A", t0A, size);
+	printArray(f, "estimationA", estimationsNodeA, size);
+	printArray(f, "t0B", t0B, size);
+	printArray(f, "estimationB", estimationsNodeB, size);
+
+	fclose(f);
 
 	sicEnd(&sicA);
 	sicEnd(&sicB);
@@ -496,14 +513,15 @@ void fileTest(){
 int main(int argc, char** argv){
 	srand(seed);
 
-	//syncStatesTestCase();
+	syncStatesTestCase();
 	syncNoDifferenceInClocks();
 	syncServerInFuture();
 	syncServerInPast();
 	parallel();
-	//parallelSimulatedVariations();
+	parallelSimulatedVariations();
 	syncServerDifFrequency();
-	//fileTest();
+	
+	fileTest();
 
 	freeResources();
 

@@ -1,4 +1,4 @@
-COMPILER=gcc #-DDEBUG
+COMPILER=gcc -g #-g for debugging info
 
 target: compile
 
@@ -12,7 +12,7 @@ circularOrderedArray.o: circularOrderedArray.h circularOrderedArray.c
 	$(COMPILER) -c circularOrderedArray.c -o circularOrderedArray.o
 
 circularOrderedArrayTestCase: circularOrderedArrayTestCase.c circularOrderedArray.o cunit.o
-	$(COMPILER) -DCIRCULAR_ORDERED_ARRAY_MAX_SIZE=10 circularOrderedArrayTestCase.c circularOrderedArray.o cunit.o -o circularOrderedArrayTestCase
+	$(COMPILER) circularOrderedArrayTestCase.c circularOrderedArray.o cunit.o -o circularOrderedArrayTestCase
 
 
 linearfit.o: linearfit.h linearfit.c
@@ -60,7 +60,7 @@ runtests: circularOrderedArrayTestCase halfSampleModeTestCase linearfitTestCase 
 	./sicTestCase
 
 clear:
-	-rm main client server *.o *TestCase
+	-rm main client server *.o *TestCase values.py
 
 clean: clear
 

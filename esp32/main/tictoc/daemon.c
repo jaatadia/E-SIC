@@ -6,9 +6,11 @@
  */
 #include "daemon.h"
 
-#include <sys/socket.h>
-#include <netinet/in.h>
 #include <stdio.h>
+
+#include "time.h"
+
+
 #include "microtime.h"
 #include "esp_timer.h"
 #include <inttypes.h>
@@ -70,21 +72,18 @@ int setupServerConnection() {
 	return socketfd;
 }
 
-void provideTimeStamps(void * parameter) {
+void receiveTimeStamps(void * parameter) {
 	TicTocData* ticTocData = (TicTocData*) parameter;
 
-	int32_t timestamps[2 * 3];
-	size_t incomingSize = sizeof(int32_t) * 2;
-	size_t outGoingSize = sizeof(int32_t) * 2 * 3;
-	
-	struct sockaddr_in cliaddr; 
-	int socketfd = setupServerConnection();
-	socklen_t cliadrrSize = sizeof(cliaddr);
+	BufferData bufferData;
+	int32_t* timestamps = bufferData.timestamps;
+	size_t incomingSize = sizeof(int32_t) * 2 * 3;
+	socklen_t cliadrrSize = sizeof(struct sockaddr_in);
 
 	for(;;) {
-		memset(&cliaddr, 0, cliadrrSize);
+		memset(&bufferData.cliaddr, 0, cliadrrSize);
 
-		if(recvfrom(socketfd, (int32_t *) timestamps, incomingSize, MSG_WAITALL, (struct sockaddr *) &cliaddr, &cliadrrSize) > 0){
+		if(recvfrom(ticTocData->socketfd, (int32_t *) timestamps, incomingSize, MSG_WAITALL, (struct sockaddr*) &bufferData.cliaddr, &cliadrrSize) > 0){
 			encodeEpochInMicros(esp_timer_get_time(), timestamps, 2);
 
 			#ifdef TICTOC_DAEMON_DEBUG
@@ -96,9 +95,32 @@ void provideTimeStamps(void * parameter) {
 
 			printf("TicTocDaemon - received t1: %"PRId64".\n", decodeEpochInMicros(timestamps,0));
 
-			encodeEpochInMicros(esp_timer_get_time(), timestamps, 4);
-			sendto(socketfd, (const int32_t *)timestamps, outGoingSize, 0, (const struct sockaddr *) &cliaddr, cliadrrSize); 	
-		}  
+			//char buffer[INET_ADDRSTRLEN];
+			//inet_ntop(AF_INET, &bufferData.cliaddr, buffer, sizeof( buffer ));
+			//printf("will send to %s\n", buffer);
+			UBaseType_t res = xRingbufferSend(ticTocData->buf_handle, &bufferData, sizeof(bufferData), pdMS_TO_TICKS(1000));
+			//if (res != pdTRUE) {
+			//  printf("Failed to send item\n");
+			//}
+		}
+	}
+}
+
+
+void provideTimeStamps(void * parameter) {
+	TicTocData* ticTocData = (TicTocData*) parameter;
+	size_t outGoingSize = sizeof(int32_t) * 2 * 3;
+    size_t item_size = sizeof(BufferData);
+	for(;;) {
+	    BufferData * item = (BufferData *)xRingbufferReceive(ticTocData->buf_handle, &item_size, pdMS_TO_TICKS(100000));
+	    if (item != NULL) {
+	    	//char buffer[INET_ADDRSTRLEN];
+	    	//inet_ntop(AF_INET, &item->cliaddr, buffer, sizeof( buffer ));
+	    	//printf("Sending to %s\n", buffer);
+	    	encodeEpochInMicros(esp_timer_get_time(), item->timestamps, 4);
+	    	sendto(ticTocData->socketfd, (const int32_t *)item->timestamps, outGoingSize, 0, (const struct sockaddr *) &(item->cliaddr), sizeof(item->cliaddr));
+	        vRingbufferReturnItem(ticTocData->buf_handle, (void *)item);
+	    }
 	}
 
 }
@@ -117,17 +139,46 @@ void setupServerAddr(struct sockaddr_in * servaddr, const char * serverIp, int s
 	inet_aton(serverIp, &(servaddr->sin_addr.s_addr));
 }
 
+
+int getStamps(int sock, const struct sockaddr * servaddr, size_t servaddrSize, int64_t* resultArray){
+	size_t outGoingSize = sizeof(int32_t) * 2 * 3;
+	size_t incomingSize = sizeof(int32_t) * 2 * 3;
+	int32_t timestamps[2 * 4];
+	int64_t t1 = esp_timer_get_time();
+	encodeEpochInMicros(t1, timestamps, 0);
+
+	//sending t1
+	sendto(sock, (const int32_t *)timestamps, outGoingSize,  0, servaddr, servaddrSize);
+
+	if(recv(sock, (int32_t *)timestamps, incomingSize, MSG_WAITALL) == incomingSize){
+		resultArray[3]=esp_timer_get_time();
+		for(int i = 0; i<3; i++) {
+			resultArray[i]=decodeEpochInMicros(timestamps,2*i);
+		}
+
+		if(resultArray[0]!=t1){
+			//receive old package discard it, and wait for the current one, that we discard due to contamination caused by the old package
+			recv(sock, (int32_t *)timestamps, incomingSize, MSG_WAITALL);
+			return 0;
+		}
+		return 1;
+	} else {
+		return 0;
+	}
+}
+
+
+
 void getTimeStamps(void * parameter){
 		int64_t loopCount = 0;
 		TicTocData* ticTocData = (TicTocData*) parameter;
-		int64_t resultArray[4];
-		int32_t timestamps[2 * 4];
+
+
 		struct sockaddr_in servaddr;
 		setupServerAddr(&servaddr, ticTocData->serverIp, ticTocData->serverPort);
-
-		size_t outGoingSize = sizeof(int32_t) * 2;
-		size_t incomingSize = sizeof(int32_t) * 2 * 3;
 		socklen_t servaddrSize = sizeof(servaddr);
+
+		int64_t resultArray[4];
 
 		for(;;) {
 			loopCount++;
@@ -141,34 +192,14 @@ void getTimeStamps(void * parameter){
 			}	
 			#endif
 
-			//printRemainingStack("TicTocDaemon - Start Loop");
-			int64_t t1 = esp_timer_get_time();
-			encodeEpochInMicros(t1, timestamps, 0);
-
-			//sending t1
-			sendto(ticTocData->sock, (const int32_t *)timestamps, outGoingSize,  0, (const struct sockaddr *) &servaddr, servaddrSize);
-
-			if(recv(ticTocData->sock, (int32_t *)timestamps, incomingSize, MSG_WAITALL) == incomingSize){
-				resultArray[3]=esp_timer_get_time();
-				for(int i = 0; i<3; i++) {
-					resultArray[i]=decodeEpochInMicros(timestamps,2*i);
-				}
-
-				if(resultArray[0]!=t1){
-					//receive old package discard it, and wait for the current one, that we discard due to contamination caused by the old package
-					#ifdef TICTOC_DAEMON_DEBUG
-					printf("TicTocDaemon timeout - old package\n");
-					#endif	
-					recv(ticTocData->sock, (int32_t *)timestamps, incomingSize, MSG_WAITALL);
-
-				} else if (loopCount > 10) {
+			if(getStamps(ticTocData->sock, (const struct sockaddr *) &servaddr, servaddrSize, resultArray)){
+				if (loopCount > 10) {
 					#ifdef TICTOC_DAEMON_DEBUG
 					printf("TicTocDaemon %lld - t1:%"PRId64" t2:%"PRId64" t3:%"PRId64" t4:%"PRId64"\n", loopCount, resultArray[0], resultArray[1], resultArray[2], resultArray[3]);
 					#endif
 					sicStep(&ticTocData->sicdata, resultArray[0], resultArray[1], resultArray[2], resultArray[3]);	
 				}
 
-				
 			} else {
 				#ifdef TICTOC_DAEMON_DEBUG
 				printf("TicTocDaemon timeout\n");
@@ -181,12 +212,9 @@ void getTimeStamps(void * parameter){
 		}
 }
 
-void setupTicToc(TicTocData* ticToc, const char * serverIp, int serverPort)
-{
-	
-	#ifndef DAEMON_SERVER
+
+void setupTicTocClient(TicTocData* ticToc, const char * serverIp, int serverPort){
 	sicInit(&ticToc->sicdata);
-	
 	int sockfd;
 	if ( (sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0 ) {
 		perror("socket creation failed");
@@ -203,22 +231,59 @@ void setupTicToc(TicTocData* ticToc, const char * serverIp, int serverPort)
 	ticToc->sock=sockfd;
 	ticToc->serverIp = serverIp;
 	ticToc->serverPort = serverPort;
-	#endif
+
+	xTaskCreatePinnedToCore(
+			// Function that should be called
+			getTimeStamps,
+		    "TicTocDaemon",				// Name of the task (for debugging)
+		    4000,						// Stack size (bytes)
+		    ticToc,						// Parameter to pass
+			TIC_TOC_DAEMON_PRIORITY,	// Task priority
+		    NULL,             			// Task handle
+			1						    // Execution Core
+		  );
+}
+
+void setupTicTocServer(TicTocData* ticToc){
+
+	 //Create ring buffer
+	ticToc->buf_handle = xRingbufferCreate(sizeof(BufferData) * 20, RINGBUF_TYPE_NOSPLIT);
+	if (ticToc->buf_handle == NULL) {
+		printf("Failed to create ring buffer\n");
+	}
+
+	ticToc->socketfd = setupServerConnection();
 
 	xTaskCreatePinnedToCore(
 		// Function that should be called
-		#ifdef DAEMON_SERVER
-		provideTimeStamps,
-		#else
-		getTimeStamps,
-		#endif				
-	    "TicTocDaemon",				// Name of the task (for debugging)
-	    4000,						// Stack size (bytes)
-	    ticToc,						// Parameter to pass
+		receiveTimeStamps,
+		"TicTocDaemonServerListener",// Name of the task (for debugging)
+		4000,						// Stack size (bytes)
+		ticToc,						// Parameter to pass
 		TIC_TOC_DAEMON_PRIORITY,	// Task priority
-	    NULL,             			// Task handle
+		NULL,             			// Task handle
 		1						    // Execution Core
-	  );
+	);
+
+	xTaskCreatePinnedToCore(
+		// Function that should be called
+		provideTimeStamps,
+		"TicTocDaemonServerListener",// Name of the task (for debugging)
+		4000,						// Stack size (bytes)
+		ticToc,						// Parameter to pass
+		TIC_TOC_DAEMON_PRIORITY,	// Task priority
+		NULL,             			// Task handle
+		0						    // Execution Core
+	);
+}
+
+void setupTicToc(TicTocData* ticToc, const char * serverIp, int serverPort)
+{
+	#ifdef DAEMON_SERVER
+	setupTicTocServer(ticToc);
+	#else
+	setupTicTocClient(ticToc, serverIp, serverPort);
+	#endif
 }
 
 int IRAM_ATTR ticTocReady(TicTocData * ticTocData){
