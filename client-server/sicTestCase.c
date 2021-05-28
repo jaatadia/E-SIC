@@ -381,8 +381,8 @@ void loadValues(SicData* sic, char* file, int64_t* t0, int64_t* estimations, int
 				estimations[(*size)] = parsed.t[1];
 				//estimations[(*size)] = sicTime(sic, parsed.t[0]);
 				
-				lastRealPhi = parsed.t[0] - serverInterruptions[(*size)];
-				lastRealPhiFound = 1;
+				//lastRealPhi = parsed.t[0] - serverInterruptions[(*size)];
+				//lastRealPhiFound = 1;
 				(*size) ++;
 				//printf("-----\n");
 			}
@@ -461,14 +461,15 @@ void fileTest(){
 
 
 	printf("\n--------- File test - loading values ... ---------.\n");
-	loadServerValues("./samples/04_29/ESP_SERVER.txt", serverT, &sizeServerT);
-	int64_t size = sizeServerT;
+	//loadServerValues("./samples/04_29/ESP_SERVER.txt", serverT, &sizeServerT);
+	//int64_t size = sizeServerT;
 	
-	loadValues(&sicA, "./samples/04_29/ESP_CLIENT.txt", t0A, estimationsNodeA, &sizeEstimationsNodeA, serverT);
-	if(sizeEstimationsNodeA < size) size = sizeEstimationsNodeA;
+	loadValues(&sicA, "./samples/05_27/Node1.txt", t0A, estimationsNodeA, &sizeEstimationsNodeA, serverT);
+	int64_t size = sizeEstimationsNodeA;
+	//if(sizeEstimationsNodeA < size) size = sizeEstimationsNodeA;
 	
-	//loadValues(&sicB, "./samples/ESP3.txt", t0B, estimationsNodeB, &sizeEstimationsNodeB);
-	//if(sizeEstimationsNodeB < size) size = sizeEstimationsNodeB;
+	loadValues(&sicB, "./samples/05_27/Node2.txt", t0B, estimationsNodeB, &sizeEstimationsNodeB, serverT);
+	if(sizeEstimationsNodeB < size) size = sizeEstimationsNodeB;
 
 	
 	int64_t maxDif = 0;
@@ -477,25 +478,29 @@ void fileTest(){
 	int starting = 0;
 	for(int i = starting; i<size; i++) {
 		//printf("Iteration %d - ", i);
-		//assertInMargin("fileTest: timeServer A B ", estimationsNodeA[i], serverT[i], 100);	
-		int64_t dif = estimationsNodeA[i] - serverT[i];
+		//assertInMargin("fileTest: timeServer A B ", estimationsNodeA[i], serverT[i], 2000);	
+		//int64_t dif = estimationsNodeA[i] - serverT[i];
+		
+		assertInMargin("fileTest: timeServer A B ", estimationsNodeA[i], estimationsNodeB[i], 2000);	
+		int64_t dif = estimationsNodeA[i] - estimationsNodeB[i];
+
 		dif = (dif < 0) ? - dif : dif;
 		if(dif > maxDif) maxDif = dif;
 		if(dif < minDif) minDif = dif;
 	}
 
-	printf("# samples: %ld\n", sizeEstimationsNodeA);
+	printf("# samples: %ld\n", size);
 	printf("MinDif: %ld\n", minDif);
 	printf("MaxDif: %ld\n", maxDif);
 
 
 	FILE* f = fopen("values.py", "w");
 
-	printArray(f, "serverTime", serverT, size);
+	//printArray(f, "serverTime", serverT, size);
 	printArray(f, "t0A", t0A, size);
 	printArray(f, "estimationA", estimationsNodeA, size);
-	//printArray(f, "t0B", t0B, size);
-	//printArray(f, "estimationB", estimationsNodeB, size);
+	printArray(f, "t0B", t0B, size);
+	printArray(f, "estimationB", estimationsNodeB, size);
 
 	fclose(f);
 
@@ -508,7 +513,6 @@ void fileTest(){
 int main(int argc, char** argv){
 	srand(seed);
 
-	
 	syncStatesTestCase();
 	syncNoDifferenceInClocks();
 	syncServerInFuture();
