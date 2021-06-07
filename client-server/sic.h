@@ -8,28 +8,27 @@
 * This library represents the core of the tic-toc algorithm.
 */
 
-/*
-* Amount of samples historic samples the algorithm uses
-* when the algoritm receives this amount of samples it will start
-* to produce aproximations of the system clock
-*/ 
+
+// Amount of samples historic samples the algorithm uses
 #define SAMPLES_SIZE 600 
 
-// Amount of algorithm cycles until a estimation parameters ar computed.
+// Amount of algorithm cycles between estimation parameters computation.
 #define P 60 
 
+// Amount of cycles between the extraction of a new mode values from the samples
+#define MODE_CYCLES P
+
 /* 
-* Each P cycles the algorithm will take this amount of samples arround the mode and store 
+* Each MODE_CYCLES cycles the algorithm will take this amount of samples arround the mode and store 
 * it in the mode array.
 */
-#define MODE_WINDOW 10 
+#define MODE_WINDOW 15
 
-/* 
-* The historic amount of mode windows that will be remembered by the algorithm.
-*/
-#define MODE_SAMPLES_SIZE MODE_WINDOW * 30
+// The historic amount of mode windows that will be remembered by the algorithm.
+#define MODE_SAMPLES 30
 
-
+// The amount cycles before the algothm starts producing aproximations
+#define STARTUP_CYCLES MODE_SAMPLES * MODE_CYCLES
 
 // Amount of consecutive timeouts the algorthm supports without discarding current status.
 #define MAX_to 6 
@@ -41,6 +40,9 @@
 
 // Constant that represents the relation t(c->s)/t(s->c)
 #define N 1 
+
+// Constant that represents how much importance will the last aproximation have in the new one
+#define ALPHA 0
 
 struct SicData { 
     int state;

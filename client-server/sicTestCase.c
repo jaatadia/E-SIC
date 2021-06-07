@@ -34,30 +34,27 @@ void syncStatesTestCase() {
 	assert("reSync when no sync achieved", sic.state, NO_SYNC);
 	assert("reSync steps when no sync achieved", sic.syncSteps, 0);
 
-	for(int i=0; i< 720; i++){
+	for(int i=0; i< STARTUP_CYCLES + P; i++){
 		sicStep(&sic, i*1000, i*1000 + 10, i*1000 + 11, i*1000 + 21);
-		if(i == 598){
-			assert("Iteration 598 state", sic.state, NO_SYNC);
-			assert("Iteration 598 steps", sic.syncSteps, 599);
-		} else if(i == 599) {
-			assert("Iteration 599 state", sic.state, SYNC);
-			assert("Iteration 599 steps", sic.syncSteps, 0);
-		} else if(i == 658) {
-			assert("Iteration 658 state", sic.state, SYNC);
-			assert("Iteration 658 steps", sic.syncSteps, 59);
-		} else if(i == 659) {
-			assert("Iteration 659 state", sic.state, SYNC);
-			assert("Iteration 659 steps", sic.syncSteps, 0);
+		if(i == STARTUP_CYCLES - 2){
+			assert("Iteration pre sync state", sic.state, NO_SYNC);
+			assert("Iteration pre sync steps", sic.syncSteps, STARTUP_CYCLES - 1);
+		} else if(i == STARTUP_CYCLES - 1) {
+			assert("Iteration sync state", sic.state, SYNC);
+			assert("Iteration sync steps", sic.syncSteps, 0);
+		} else if(i == STARTUP_CYCLES + P - 2) {
+			assert("Iteration sync pre recalculation state", sic.state, SYNC);
+			assert("Iteration sync pre recalculation steps", sic.syncSteps, P - 1);
+		} else if(i == STARTUP_CYCLES + P - 1) {
+			assert("Iteration sync recalculation state", sic.state, SYNC);
+			assert("Iteration sync recalculation steps", sic.syncSteps, 0);
 		}
 	}
 
-	sicStepTimeout(&sic);
-	sicStepTimeout(&sic);
-	sicStepTimeout(&sic);
-	sicStepTimeout(&sic);
-	sicStepTimeout(&sic);
-	sicStepTimeout(&sic);
-
+	for(int i=0; i< MAX_to; i++){
+		sicStepTimeout(&sic);	
+	}
+	
 	assert("reSync", sic.state, RE_SYNC);
 	assert("reSync steps", sic.syncSteps, 0);
 
@@ -378,8 +375,8 @@ void loadValues(SicData* sic, char* file, int64_t* t0, int64_t* estimations, int
 				//assertInMargin("training assertion", parsed.t[1], sicTime(sic, parsed.t[0]), 100);
 				t0[(*size)] = parsed.t[0];
 				
-				estimations[(*size)] = parsed.t[1];
-				//estimations[(*size)] = sicTime(sic, parsed.t[0]);
+				//estimations[(*size)] = parsed.t[1];
+				estimations[(*size)] = sicTime(sic, parsed.t[0]);
 				
 				//lastRealPhi = parsed.t[0] - serverInterruptions[(*size)];
 				//lastRealPhiFound = 1;
@@ -442,7 +439,65 @@ void printArray(FILE * f, char* name, int64_t* values, int64_t size){
 }
 
 
-void fileTest(){
+void clientServerFileTest(){
+	SicData sicA;
+	sicInit(&sicA);
+
+	int64_t sizeServerT;
+	int64_t serverT[50000];
+
+	int64_t sizeEstimationsNodeA;
+	int64_t estimationsNodeA[50000];
+	int64_t t0A[50000];
+
+
+	printf("\n--------- File test - loading values ... ---------.\n");
+	loadServerValues("./samples/04_29/ESP_SERVER.txt", serverT, &sizeServerT);
+	int64_t size = sizeServerT;
+	
+	loadValues(&sicA, "./samples/04_29/ESP_CLIENT.txt", t0A, estimationsNodeA, &sizeEstimationsNodeA, serverT);
+	if(sizeEstimationsNodeA < size) size = sizeEstimationsNodeA;
+	
+	int64_t maxDif = 0;
+	int64_t minDif = 10000000;
+
+	//Ignore Initial Garbaje due to change in sincronization times of the algorithm
+	int i;
+	for(i = 0; i<size; i++) {
+		//printf("Iteration %d - ", i);
+		int64_t dif = estimationsNodeA[i] - serverT[i];
+		dif = (dif < 0) ? - dif : dif;
+
+		if(dif <= 30000) break;
+	}
+
+	for(i; i<size; i++) {
+		//printf("Iteration %d - ", i);
+		int64_t dif = estimationsNodeA[i] - serverT[i];
+		dif = (dif < 0) ? - dif : dif;
+
+		assertInMargin("fileTest: Client Server", estimationsNodeA[i], serverT[i], 2000);	
+		if(dif > maxDif) maxDif = dif;
+		if(dif < minDif) minDif = dif;
+	}
+
+	printf("# samples: %ld\n", size);
+	printf("MinDif: %ld\n", minDif);
+	printf("MaxDif: %ld\n", maxDif);
+
+
+	FILE* f = fopen("values.py", "w");
+
+	printArray(f, "serverTime", serverT, size);
+	printArray(f, "t0A", t0A, size);
+	printArray(f, "estimationA", estimationsNodeA, size);
+	
+	fclose(f);
+
+	sicEnd(&sicA);
+}
+
+void twoNodesfileTest(){
 	SicData sicA;
 	SicData sicB;
 	sicInit(&sicA);
@@ -521,7 +576,7 @@ int main(int argc, char** argv){
 	parallelSimulatedVariations();
 	syncServerDifFrequency();
 	
-	fileTest();
+	clientServerFileTest();
 
 	freeResources();
 

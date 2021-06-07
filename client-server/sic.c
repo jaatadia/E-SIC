@@ -68,7 +68,7 @@ double getTimeDouble(void * array, int pos){
 
 void sicInit(SicData* sic) {
 	sic->Wm = initCircularOrderedArray(SAMPLES_SIZE, sizeof(WmNode), cpyWmNode, cmpWmNode);
-	sic->Wmode = initCircularOrderedArray(MODE_SAMPLES_SIZE, sizeof(WmNode), cpyWmNode, cmpWmNode);
+	sic->Wmode = initCircularOrderedArray(MODE_WINDOW * MODE_SAMPLES, sizeof(WmNode), cpyWmNode, cmpWmNode);
 	sicReset(sic);
 	sic->state = NO_SYNC;
     sic->actual_m = 0;
@@ -116,7 +116,7 @@ void sicStep(SicData* sic, int64_t t1, int64_t t2, int64_t t3, int64_t t4) {
 	updateSamples(sic, t1, t2, t3, t4);
 
 	// If we filled the sample array for the first time or one minute has passed since the last estimation we get a new estimation of phi
-	if(((sic->state == NO_SYNC || sic->state == RE_SYNC) && sic->syncSteps == SAMPLES_SIZE) ||
+	if(((sic->state == NO_SYNC || sic->state == RE_SYNC) && sic->syncSteps == STARTUP_CYCLES) ||
 		(sic->state == SYNC && sic->syncSteps == P)){
 		
 		calculateLinearFit(sic);
@@ -142,7 +142,7 @@ void updateSamples(SicData* sic, int64_t t1, int64_t t2, int64_t t3, int64_t t4)
 
 	// Each minute we get the mode values from the samples array and insert them mode array
 	HalfSampleModeResult hsmResult;
-	if(sic->syncSteps % P == 0){
+	if(sic->syncSteps % MODE_CYCLES == 0){
 		halfSampleModeWindow(sic->Wm, 0, sic->Wm->size, getCmp, MODE_WINDOW, &hsmResult);
 
 		for(int i=hsmResult.position1; i<hsmResult.position2; i++){
@@ -155,12 +155,24 @@ void updateSamples(SicData* sic, int64_t t1, int64_t t2, int64_t t3, int64_t t4)
 	}	
 }
 
+// Combines the old and the new value using the given alpha factor.
+double ponderate(double previousValue, double newValue) {
+	return ALPHA * previousValue + (1-ALPHA) * newValue;
+}
+
 // Uses the current data to estimate the phi parameters.
 void calculateLinearFit(SicData* sic){
 	LinearFitResult result;
 	linearFit(sic->Wmode, 0, sic->Wmode->size, getTimeDouble, getPhiDouble, &result); 
-	sic->actual_m = result.m;
-	sic->actual_c = result.c;
+
+	if(sic->state == SYNC){
+		sic->actual_m = ponderate(sic->actual_m, result.m);
+		sic->actual_c = ponderate(sic->actual_c, result.c);	
+	} else {
+		sic->actual_m = result.m;
+		sic->actual_c = result.c;	
+	}
+	
 }
 
 int sicTimeAvailable(SicData* sic){
