@@ -28,7 +28,7 @@
 #define MODE_SAMPLES 30
 
 // The amount cycles before the algothm starts producing aproximations
-#define STARTUP_CYCLES MODE_SAMPLES * MODE_CYCLES
+#define STARTUP_CYCLES SAMPLES_SIZE
 
 // Amount of consecutive timeouts the algorthm supports without discarding current status.
 #define MAX_to 6 
@@ -39,7 +39,7 @@
 #define SYNC 3
 
 // Constant that represents the relation t(c->s)/t(s->c)
-#define N 1 
+#define N 6 
 
 // Constant that represents how much importance will the last aproximation have in the new one
 #define ALPHA 0

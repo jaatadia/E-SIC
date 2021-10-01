@@ -29,8 +29,15 @@ halfSampleModeTestCase: halfSampleModeTestCase.c halfSampleMode.o cunit.o
 	$(COMPILER) halfSampleModeTestCase.c halfSampleMode.o cunit.o -o halfSampleModeTestCase
 
 
+sicV1.o: sic.h sicV1.c
+	$(COMPILER) -c sicV1.c -o sicV1.o
+
 sic.o: sic.h sic.c
 	$(COMPILER) -c sic.c -o sic.o
+
+
+sicV1TestCase: sicTestCase.c sicV1.o linearfit.o circularOrderedArray.o halfSampleMode.o cunit.o
+	$(COMPILER) sicTestCase.c sicV1.o linearfit.o circularOrderedArray.o halfSampleMode.o cunit.o -o sicV1TestCase
 
 sicTestCase: sicTestCase.c sic.o linearfit.o circularOrderedArray.o halfSampleMode.o cunit.o
 	$(COMPILER) sicTestCase.c sic.o linearfit.o circularOrderedArray.o halfSampleMode.o cunit.o -o sicTestCase
