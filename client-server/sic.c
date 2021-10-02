@@ -2,6 +2,7 @@
 #include "halfSampleMode.h"
 #include <stdio.h>
 #include <inttypes.h>	
+#include "node.h"
 
 //#define TICTOC_SIC_DEBUG
 
@@ -9,46 +10,14 @@ void sicReset(SicData* sic);
 void updateSamples(SicData* sic, int64_t t1, int64_t t2, int64_t t3, int64_t t4);
 void calculateLinearFit(SicData* sic);
 
-/***********************************
-* 			WmNode Definitions
-*
-* This datatype represents the data corresponding to a single estimation of phi.
-***********************************/
-// TODO extract this to its own module
-
-struct WmNode { 
-	int64_t cmp; // This value will be used to order the array
-	int64_t phi; 
-    int64_t time;
-};
-
-typedef struct WmNode WmNode;
-
-
-// function to copy a WmNode from source to target.
-void cpyWmNode(void * source, void * target){
-	WmNode* sourceWmNode = (WmNode*) source;
-	WmNode* targetWmNode = (WmNode*) target;
-
-	targetWmNode->cmp = sourceWmNode->cmp;
-	targetWmNode->phi = sourceWmNode->phi;
-	targetWmNode->time = sourceWmNode->time;
-}
-
-// function to order two WmNode
-double cmpWmNode(void * first, void * second){
-	WmNode* firstWmNode = (WmNode*) first;
-	WmNode* secondWmNode = (WmNode*) second;
-	return (double)firstWmNode->cmp - (double)secondWmNode->cmp;
-}
 
 //function to retrieve the value to use for the comparison in the position pos of the array.
 int64_t getCmp(void * array, int pos){
-	return ((WmNode*)((CircularOrderedArray*) array)->data[pos])->cmp;
+	return ((Node*)((CircularOrderedArray*) array)->data[pos])->cmp;
 }
 
 int64_t getPhi(void * array, int pos){
-	return ((WmNode*)((CircularOrderedArray*) array)->data[pos])->phi;
+	return ((Node*)((CircularOrderedArray*) array)->data[pos])->phi;
 }
 
 double getPhiDouble(void * array, int pos){
@@ -56,7 +25,7 @@ double getPhiDouble(void * array, int pos){
 }
 
 int64_t getTime(void * array, int pos){
-	return ((WmNode*)((CircularOrderedArray*) array)->data[pos])->time;
+	return ((Node*)((CircularOrderedArray*) array)->data[pos])->time;
 }
 
 double getTimeDouble(void * array, int pos){
@@ -67,8 +36,8 @@ double getTimeDouble(void * array, int pos){
 
 
 void sicInit(SicData* sic) {
-	sic->Wm = initCircularOrderedArray(SAMPLES_SIZE, sizeof(WmNode), cpyWmNode, cmpWmNode);
-	sic->Wmode = initCircularOrderedArray(MODE_WINDOW * MODE_SAMPLES, sizeof(WmNode), cpyWmNode, cmpWmNode);
+	sic->Wm = initCircularOrderedArray(SAMPLES_SIZE, sizeof(Node), cpyNode, cmpNode);
+	sic->Wmode = initCircularOrderedArray(P, sizeof(Node), cpyNode, cmpNode);
 	sicReset(sic);
 	sic->state = NO_SYNC;
     sic->actual_m = 0;
@@ -129,30 +98,25 @@ void sicStep(SicData* sic, int64_t t1, int64_t t2, int64_t t3, int64_t t4) {
 }
 
 
-// Calculates phi and inserts it in the corresponding arrays
+// Calculates phi and inserts it in the corresponding arrays according to the sic 
 void updateSamples(SicData* sic, int64_t t1, int64_t t2, int64_t t3, int64_t t4){	
-	WmNode node;
+	Node node;
 	
-	node.phi = (t1 - t2 - N * t3 + N * t4)/(N+1);
+	node.phi = (t1 - t2 - t3 + t4)/2;
 	node.cmp = node.phi;
 	node.time = (t1+t4)/2;
 		
 	// Insert the latest sample
 	insertOrdered(sic->Wm, &node);
 
-	// Each minute we get the mode values from the samples array and insert them mode array
-	HalfSampleModeResult hsmResult;
-	if(sic->syncSteps % MODE_CYCLES == 0){
-		halfSampleModeWindow(sic->Wm, 0, sic->Wm->size, getCmp, MODE_WINDOW, &hsmResult);
+	//if(sic->syncSteps % P == 0){
+		int median = sic->Wm->size/2;
+		node.phi = getPhi(sic->Wm, median);
+		node.cmp = getCmp(sic->Wm, median);
+		node.time = t1;//getTime(sic->Wm, median);
+		insertOrdered(sic->Wmode, &node);
+	//}
 
-		for(int i=hsmResult.position1; i<hsmResult.position2; i++){
-			WmNode node;	
-			node.phi = getPhi(sic->Wm, i);
-			node.cmp = getCmp(sic->Wm, i);
-			node.time = getTime(sic->Wm, i);
-			insertOrdered(sic->Wmode, &node);
-		}
-	}	
 }
 
 // Combines the old and the new value using the given alpha factor.
