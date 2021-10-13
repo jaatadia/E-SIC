@@ -100,7 +100,7 @@ serverTimeSeconds = [a/microsToSeconds for a in serverTime]
 
 
 
-plt.rcParams.update({'font.size': 16})
+plt.rcParams.update({'font.size': 20})
 plt.rcParams.update({'figure.autolayout': True})
 
 # -----------------------------------
@@ -110,13 +110,15 @@ plt.rcParams.update({'figure.autolayout': True})
 plt.figure('Phi', figsize=(10,10)) 
 plt.title('Caclulo de ϕ')
 
+(minX, maxX) = (5000,15000)
+(p1, p2) = getPositions(serverTimeSeconds, minX, maxX)
 realPhi = [b - a for a,b in zip(serverTime, t0A)]
 sicV1Phi=[b - a for a,b in zip(estimationSicV1, t0A)]
 sicV2Phi=[b - a for a,b in zip(estimationSicV2, t0A)]
 
-plt.plot(serverTimeSeconds, np.divide(realPhi,1000), "k-", label="ϕ Real")
-plt.plot(serverTimeSeconds, np.divide(sicV1Phi,1000), "r-", label="ϕ Algoritmo SIC")
-plt.plot(serverTimeSeconds, np.divide(sicV2Phi,1000), "b-", label="ϕ Algoritmo E-SIC")
+plt.plot(serverTimeSeconds[p1:p2], np.divide(realPhi[p1:p2],1000), "k-", linewidth=4.0, label="ϕ Real")
+plt.plot(serverTimeSeconds[p1:p2], np.divide(sicV1Phi[p1:p2],1000), "r-", linewidth=3.0, label="ϕ Algoritmo SIC")
+plt.plot(serverTimeSeconds[p1:p2], np.divide(sicV2Phi[p1:p2],1000), "c-", linewidth=3.0, label="ϕ Algoritmo E-SIC")
 
 plt.xlabel('Tiempo en el reloj Servidor (segundos)')
 plt.ylabel('ϕ (milisegundos)')
@@ -126,6 +128,7 @@ axes.ticklabel_format(style='plain')
 
 plt.legend()
 plt.savefig('oneClient-phi.eps', format='eps')
+plt.savefig('oneClient-phi.png')
 plt.close()
 
 # -------------------------------------
@@ -136,9 +139,9 @@ plt.title('Caclulo de ϕ')
 (minX, maxX) = (5000,6200)
 (p1, p2) = getPositions(serverTimeSeconds, minX, maxX)
 
-plt.plot(serverTimeSeconds[p1:p2], np.divide(realPhi[p1:p2], 1000), "k-", label="ϕ Real")
+plt.plot(serverTimeSeconds[p1:p2], np.divide(realPhi[p1:p2], 1000), "k-", linewidth=2.0, label="ϕ Real")
 plt.plot(serverTimeSeconds[p1:p2], np.divide(sicV1Phi[p1:p2], 1000), "rx", label="ϕ Algoritmo SIC")
-plt.plot(serverTimeSeconds[p1:p2], np.divide(sicV2Phi[p1:p2], 1000), "bx", label="ϕ Algoritmo E-SIC")
+plt.plot(serverTimeSeconds[p1:p2], np.divide(sicV2Phi[p1:p2], 1000), "cx", label="ϕ Algoritmo E-SIC")
 
 plt.xlabel('Tiempo en el reloj Servidor (segundos)')
 plt.ylabel('ϕ (milisegundos)')
@@ -151,7 +154,7 @@ plt.gcf().axes[0].yaxis.set_major_formatter(ticker.FormatStrFormatter("%d"))
 	
 plt.legend()
 plt.savefig('oneClient-phiZoom.eps', format='eps')
-
+plt.savefig('oneClient-phiZoom.png')
 
 plt.close()
 
@@ -166,7 +169,7 @@ error1 = [abs(b - a) for a,b in zip(estimationSicV1, serverTime)]
 error2 = [abs(b - a) for a,b in zip(estimationSicV2, serverTime)]
 
 plt.plot(serverTimeSeconds, error1, "r-", label="Error Algoritmo SIC")
-plt.plot(serverTimeSeconds, error2, "b-", label="Error Algoritmo E-SIC")
+plt.plot(serverTimeSeconds, error2, "c-", label="Error Algoritmo E-SIC")
 
 plt.xlabel('Tiempo en el reloj servidor (segundos)')
 plt.ylabel('Error del reloj del cliente (microsegundos)')

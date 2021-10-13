@@ -68,8 +68,8 @@ int main(int argc, char** argv){
 	FILE* ftc = fopen("samples_tc.py", "w");
 	FILE* fts = fopen("samples_ts.py", "w");
 	FILE* fr = fopen("samples_phi.py", "w");
-	FILE* fs = fopen("samples_sicPhi.py", "w");
-	FILE* fe = fopen("samples_esicPhi.py", "w");
+	FILE* fs = fopen("samples_tsic.py", "w");
+	FILE* fe = fopen("samples_tesic.py", "w");
 	startNamedArray(ftc, "tc");
 	startNamedArray(fts, "ts");
 	startNamedArray(fr, "realPhi");
@@ -121,7 +121,7 @@ int main(int argc, char** argv){
 			printValue(fts, ts);
 			printValue(fr, tc-ts);
 			printValue(fs, sicT);
-			printValue(fe, tc-esicT);
+			printValue(fe, esicT);
 
 			interruption++;
 		}

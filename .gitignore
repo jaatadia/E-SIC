@@ -5,3 +5,4 @@ client-server/client
 esp32/build/*
 *.pyc
 graphs/*.png
+graphs/*.eps

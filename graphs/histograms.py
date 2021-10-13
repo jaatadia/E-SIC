@@ -158,10 +158,12 @@ samples = np.divide(samples, 1000000)
 
 # -----------------------------------
 
-for i in range(0, len(samples)):
+def histogram(i):	
+	fig, ax = plt.subplots()
+	ax.ticklabel_format(useOffset=False)
 
 	n = samples[i]
-	bins = getBeans(n, 30)
+	bins = getBeans(n, 40, 0.3, 0.5)
 
 	plt.hist(n, bins=bins)
 	plt.axvline(n[300], color="r", label='Mediana')
@@ -169,8 +171,10 @@ for i in range(0, len(samples)):
 	#plt.axvline(modes[i], color="k", label='Moda')
 	#plt.axvline(n[mpos[i][0]], color="k", label='Moda Inferior')
 	#plt.axvline(n[mpos[i][1]], color="k", label='Moda Superior')
-	#plt.xlabel('ϕ = tc - ts (Segundos)')
-	#plt.ylabel('# de muestras')
+	plt.xlabel('ϕ = tc - ts (Segundos)')
+	plt.ylabel('# de muestras')
+
+	
 
 	
 	#t = t_samples[i]
@@ -189,6 +193,14 @@ for i in range(0, len(samples)):
 
 	#plt.savefig('histogram'+ str(i) +'.eps', format='eps')
 	plt.legend()
-	plt.savefig('histogram'+ "{:03d}".format(i) +'.png')
+	#plt.savefig('histogram'+ "{:03d}".format(i) +'.png')
+	plt.savefig('histogram'+ "{:03d}".format(i) +'.eps', format='eps')
 	plt.close()
 
+
+
+
+#for i in range(0, len(samples)):
+#	histogram(i)
+
+histogram(14)
