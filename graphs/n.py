@@ -21,19 +21,19 @@ plt.figure("N")
 plt.hist(n, bins=range(0,30,1))
 
 
-plt.xlabel('N = t(c->s)/t(s->c)')
+plt.xlabel('ρ = t(c->s)/t(s->c)')
 plt.ylabel('# of samples')
 plt.text(10, 600, "Media: "+ str("%.2f" % np.mean(n)) + ", Desviación Etándar: "+str("%.2f" % np.std(n)))
-plt.savefig('N Histogram.png')
+plt.savefig('nHist.png')
 plt.close()
 
 
 
 plt.figure("N") 
-plt.ylabel('N = t(c->s)/t(s->c)')
+plt.ylabel('ρ')
 plt.xlabel('Tiempo en el reloj Servidor (segundos)')
 
-plt.plot(t1, n, "bx", label="Phi Algoritmo SIC modificado N = 5")
+plt.plot(t1, n, "bx")
 
 axes = plt.gca()
 axes.ticklabel_format(style='plain')

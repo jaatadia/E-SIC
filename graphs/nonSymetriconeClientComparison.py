@@ -82,20 +82,20 @@ sicV2N3Phi=[b - a for a,b in zip(estimationSicV2N3, t0A)]
 sicV2N5Phi=[b - a for a,b in zip(estimationSicV2N5, t0A)]
 sicV2N7Phi=[b - a for a,b in zip(estimationSicV2N7, t0A)]
 
-plt.plot(serverTimeSeconds, realPhi, "k-", label="Phi Real")
-plt.plot(serverTimeSeconds, sicV2Phi, "r-", label="Phi E-SIC N = 1")
-plt.plot(serverTimeSeconds, sicV2N3Phi, "g-", label="Phi E-SIC N = 3")
-plt.plot(serverTimeSeconds, sicV2N5Phi, "b-", label="Phi E-SIC N = 5")
+plt.plot(serverTimeSeconds, realPhi, "k-", label="ϕ Real")
+plt.plot(serverTimeSeconds, sicV2Phi, "r-", label="E-SIC ρ = 1")
+plt.plot(serverTimeSeconds, sicV2N3Phi, "g-", label="E-SIC ρ = 3")
+plt.plot(serverTimeSeconds, sicV2N5Phi, "b-", label="E-SIC ρ = 5")
 #plt.plot(serverTimeSeconds, sicV2N7Phi, "m-", label="Phi Algoritmo E-SIC N = 7")
 
 plt.xlabel('Tiempo en el reloj Servidor (segundos)')
-plt.ylabel('Phi (microsegundos)')
+plt.ylabel('ϕ (microsegundos)')
 
 axes = plt.gca()
 axes.ticklabel_format(style='plain')
 
 plt.legend()
-plt.savefig('non-symetric-phi.png')
+plt.savefig('asymetricPhi.png')
 plt.close()
 
 # -----------------------------------
@@ -110,9 +110,9 @@ error3 = [abs(b - a) for a,b in zip(estimationSicV2N3, serverTime)]
 error5 = [abs(b - a) for a,b in zip(estimationSicV2N5, serverTime)]
 error7 = [abs(b - a) for a,b in zip(estimationSicV2N7, serverTime)]
 
-plt.plot(serverTimeSeconds, error1, "r-", label="Error E-SIC N = 1")
-plt.plot(serverTimeSeconds, error3, "g-", label="Error E-SIC N = 3")
-plt.plot(serverTimeSeconds, error5, "b-", label="Error E-SIC N = 5")
+plt.plot(serverTimeSeconds, error1, "r-", label="E-SIC ρ = 1")
+plt.plot(serverTimeSeconds, error3, "g-", label="E-SIC ρ = 3")
+plt.plot(serverTimeSeconds, error5, "b-", label="E-SIC ρ = 5")
 #plt.plot(serverTimeSeconds, error7, "m-", label="Error Algoritmo E-SIC N = 7")
 
 plt.xlabel('Tiempo en el reloj servidor (segundos)')
@@ -122,7 +122,7 @@ axes = plt.gca()
 axes.ticklabel_format(style='plain')
 
 plt.legend()
-plt.savefig('non-symetric-Error.png')
+plt.savefig('asymetricError.png')
 plt.close()
 
 print("SicV2:") 
