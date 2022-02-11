@@ -139,6 +139,10 @@ min_index = np.argmin(err2)
 plt.annotate('({:.0f},{:.0f})'.format(xmax, ymax), xy=(xmax, ymax), xytext=(xmax, ymax+30), arrowprops=dict(facecolor='red', shrink=0.05))
 plt.annotate('({:.0f},{:.0f})'.format(xmin, ymin), xy=(xmin, ymin), xytext=(xmin, ymin-40), arrowprops=dict(facecolor='red', shrink=0.05))
 
+mti_max_s_2 = abs(xmax-xmin)
+mti_max_2 = ymax-ymin
+print("Nodo2: ("+ str(mti_max_s_2) + ", " + str (mti_max_2)+ ")")
+
 # --------------
 plt.plot(t0, err3, "g-", label="Nodo 3")
 max_index = np.argmax(err3)
@@ -147,6 +151,10 @@ min_index = np.argmin(err3)
 (xmin, ymin) = (t0[min_index], err3[min_index])
 plt.annotate('({:.0f},{:.0f})'.format(xmax, ymax), xy=(xmax, ymax), xytext=(xmax, ymax+30), arrowprops=dict(facecolor='green', shrink=0.05))
 plt.annotate('({:.0f},{:.0f})'.format(xmin, ymin), xy=(xmin, ymin), xytext=(xmin, ymin-40), arrowprops=dict(facecolor='green', shrink=0.05))
+
+mti_max_s_3 = abs(xmax-xmin)
+mti_max_3 = ymax-ymin
+print("Nodo3: ("+ str(mti_max_s_3) + ", " + str (mti_max_3)+ ")")
 
 
 # --------------
@@ -162,11 +170,19 @@ min_index = indexes[0][-1]
 (xmin, ymin) = (t0[min_index], err4[min_index])
 plt.annotate('({:.0f},{:.0f})'.format(xmin, ymin), xy=(xmin, ymin), xytext=(xmin, ymin-40), arrowprops=dict(facecolor='blue', shrink=0.05))
 
-plt.xlabel('Tc Node1 (segundos)')
-plt.ylabel('delta-clock (microsegundos)')
+mti_max_s_4 = abs(xmax-xmin)
+mti_max_4 = ymax-ymin
+print("Nodo4: ("+ str(mti_max_s_4) + ", " + str (mti_max_4)+ ")")
+
+
+
+plt.xlabel('Tc Nodo1 (segundos)')
+plt.ylabel('|TE| = |Tc Nodo - Tc Nodo1| (microsegundos)')
 
 axes = plt.gca()
 axes.ticklabel_format(style='plain')
+
+print("-------")
 
 plt.legend()
 plt.savefig('delta_multinode.eps', format='eps')
@@ -175,7 +191,7 @@ plt.close()
 
 # #------------------------
 
-(t1,t2)=getPositions(S,0,8000)
+(t1,t2)=getPositions(S,0,8700)
 #(t1,t2)=(0,len(S))
 
 
@@ -192,9 +208,16 @@ snew = np.linspace(S[t1], S[t2-1], num=200, endpoint=True)
 #print(fesp2)
 #print(fesp3)
 #print(fesp4)
-plt.plot(snew, fesp2(snew), "r-", label="Nodo 2")
-plt.plot(snew, fesp3(snew), "g-", label="Nodo 3")
-plt.plot(snew, fesp4(snew), "b-", label="Nodo 4")
+#plt.plot(snew, fesp2(snew), "r-", label="Nodo 2")
+#plt.plot(snew, fesp3(snew), "g-", label="Nodo 3")
+#plt.plot(snew, fesp4(snew), "b-", label="Nodo 4")
+
+plt.plot(S[t1:t2], mtie_esp2[t1:t2], "r-", label="Nodo 2")
+plt.plot(S[t1:t2], mtie_esp3[t1:t2], "g-", label="Nodo 3")
+plt.plot(S[t1:t2], mtie_esp4[t1:t2], "b-", label="Nodo 4")
+plt.annotate('({:.0f},{:.0f})'.format(mti_max_s_2, mti_max_2), xy=(mti_max_s_2, mti_max_2), xytext=(mti_max_s_2, mti_max_2), arrowprops=dict(facecolor='red', shrink=0.05))
+plt.annotate('({:.0f},{:.0f})'.format(mti_max_s_3, mti_max_3), xy=(mti_max_s_3, mti_max_3), xytext=(mti_max_s_3, mti_max_3), arrowprops=dict(facecolor='green', shrink=0.05))
+plt.annotate('({:.0f},{:.0f})'.format(mti_max_s_4, mti_max_4), xy=(mti_max_s_4, mti_max_4), xytext=(mti_max_s_4, mti_max_4), arrowprops=dict(facecolor='blue', shrink=0.05))
 
 #plt.plot(S[t1:t2], mtie_sic[t1:t2], "r-", label="SIC")
 #plt.plot(S[t1:t2], mtie_esic[t1:t2], "c-", label="E-SIC")
